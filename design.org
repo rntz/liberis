@@ -20,22 +20,22 @@ Arguments passed on stack? In regs?
 
 Three op form or two op as necessary for space constraints. Figure out later.
 
-* Upvars & closures
+* Upvals & closures
 
-Each fn has environment consisting of "upvars" (closed-over variables; name
+Each fn has environment consisting of "upvals" (closed-over variables; name
 stolen from lua, though ours are slightly different).
 
 Closures are created by a "closure" instruction, which takes destination
-register, function, and list of operands to populate environment upvars with.
+register, function, and list of operands to populate environment upvals with.
 Operands are:
 - our registers
-- our upvars
+- our upvals
 
-Upvars are not indirected; an environment directly contains the upvars needed.
+Upvals are not indirected; an environment directly contains the upvals needed.
 This means they are *copied* when closed-over, so mutations to the register or
-upvar they came from will not propagate to them and vice versa.
+upval they came from will not propagate to them and vice versa.
 
-** Big picture re upvar copying semantics
+** Big picture re upval copying semantics
 
 There are three possible source-language semantics for variables & closures:
 - immutable variables
@@ -53,8 +53,10 @@ relatively uncommon case in practice.
 
 * Constants
 
-Small constants can be "immediate" (special operand form).
-Large constants have special multi-word instruction for loading.
+Small numeric constants can be "immediate" (special operand form)?
+Medium numeric constants can be loaded by an instruction.
+Large numbers and other constants (eg. strings) are stored along with upvals
+  and accessed the same way.
 
 * Calling and return convention
 
@@ -118,3 +120,37 @@ Options:
   cons:
   + slooooow (esp if you don't cache small ints)
 
+
+* Instruction encoding notes
+
+** Comparisons
+
+Encoding comparisons is an interesting design point.
+
+We take two operands, and each one could be register, upval, or immediate,
+_except_ that we can rule out immediate/immediate comparison. This makes
+
+    8 = 3*3 - 1
+
+possibilities. However, encoding this in the minimum possible 3 bits is a PITA;
+the natural encoding uses 4, with 2 bits each to specify the type (reg, upval,
+imm) of each operand.
+
+We can make do with only two comparison operations (eg. LEQ, EQ) if we're
+willing to be constrained as to which branch goes where. Otherwise we want four
+(LEQ, LT, EQ, NEQ). Taking the conditional is cheaper than not taking it, since
+we just skip over next instruction without reading it. So not constraining
+enables better optimization/performance-tweaking.
+
+The best-performance option is probably an opcode for each combination of
+comparison operation and operand types. At minimum there are 8 * 2 = 16
+combinations, and at maximum there are 9 * 4 = 36. Writing the code for each
+case manually would be insane, but some code-generation scheme could probably be
+worked out.
+
+For now, however, we take the simplest option: there is *one* comparison
+instruction. It takes the two operands, along with a byte indicating (a) what
+types the operands have (reg, upval, or imm) and (b) which comparison is desired
+and. (a) is encoded in 4 bits (with the immediate/immediate case representable
+but outlawed; this prohibition may or may not be enforced by the bytecode
+interpreter) and (b) in 2 bits, so the whole thing can fit in a byte.

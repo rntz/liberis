@@ -3,12 +3,16 @@
 #ifndef _OPCODES_H_
 #define _OPCODES_H_
 
-#define MOV            ((opcode_t) (0))
-#define CALL_UPVAR     ((opcode_t) (1))
-#define CALL_REG       ((opcode_t) (2))
-#define CLOSE          ((opcode_t) (3))
-#define JUMP           ((opcode_t) (4))
-#define TAILCALL_UPVAR ((opcode_t) (5))
-#define TAILCALL_REG   ((opcode_t) (6))
+#define RVM_OP_MOVE         ((rvm_opcode_t)  0)
+#define RVM_OP_LOAD_CONST   ((rvm_opcode_t)  1)
+#define RVM_OP_LOAD_UPVAL   ((rvm_opcode_t)  2)
+#define RVM_OP_CALL         ((rvm_opcode_t)  3)
+#define RVM_OP_CALL_REG     ((rvm_opcode_t)  4)
+#define RVM_OP_TAILCALL     ((rvm_opcode_t)  5)
+#define RVM_OP_TAILCALL_REG ((rvm_opcode_t)  6)
+#define RVM_OP_JUMP         ((rvm_opcode_t)  7)
+#define RVM_OP_RETURN       ((rvm_opcode_t)  8)
+#define RVM_OP_CMP          ((rvm_opcode_t)  9)
+#define RVM_OP_CLOSE        ((rvm_opcode_t) 10)
 
 #endif
