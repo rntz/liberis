@@ -1,0 +1,120 @@
+* Goals
+
+- Pretty efficient to interpret directly.
+  - no SSA.
+- Register machine, not stack machine
+  - some research suggests that reg machines are more performant
+  - but mostly because I feel like it.
+- Support precise gc.
+- Support closures.
+  - Non-naive view of environment capture.
+    (don't prevent a var from being gced due to a closure that never uses it)
+
+* General notes
+
+Rips off Lua pretty heavily.
+
+Register machine. Each function indicates how many registers it needs.
+
+Arguments passed on stack? In regs?
+
+Three op form or two op as necessary for space constraints. Figure out later.
+
+* Upvars & closures
+
+Each fn has environment consisting of "upvars" (closed-over variables; name
+stolen from lua, though ours are slightly different).
+
+Closures are created by a "closure" instruction, which takes destination
+register, function, and list of operands to populate environment upvars with.
+Operands are:
+- our registers
+- our upvars
+
+Upvars are not indirected; an environment directly contains the upvars needed.
+This means they are *copied* when closed-over, so mutations to the register or
+upvar they came from will not propagate to them and vice versa.
+
+** Big picture re upvar copying semantics
+
+There are three possible source-language semantics for variables & closures:
+- immutable variables
+- mutable variables with copying semantics
+- mutable variables with sharing semantics
+
+RVM makes the first two easy to implement efficiently, but an implementation of
+the last needs to do some simple analyses to generate efficient RVM code. To
+allow sharing, it needs to allocate heap space (perhaps in the form of ref
+cells) for the shared variables. But putting every variable on the heap is bad.
+So the compiler should only put variables on the heap if they are both (a)
+shared between a parent and any of its transitive child functions and (b)
+mutated by one of these functions. This is a pretty simple analysis to do, and a
+relatively uncommon case in practice.
+
+* Constants
+
+Small constants can be "immediate" (special operand form).
+Large constants have special multi-word instruction for loading.
+
+* Calling and return convention
+
+Assume metadata-based precise gc.
+
+Lua explicitly copies return values into place. This makes it possible for a
+function to return things not in reg 0..n without explicitly moving its results
+into place, probably a good thing. Might be in want of a fast path, though. (In
+how many cases can we manage to get return values in registers 0..n w/o
+copying?)
+
+Lua also does tailcalls by setting up a frame as usual and then moving the frame
+down. Again, allows tailcalling something without overwriting your own args /
+explicitly moving args into place. Might turn out to be possible to avoid having
+to do this via clever compilation, though. (Could we just fast-path tailcalls
+whose args start at 0?)
+
+Maybe just expose a "copy register range" instruction? Cleaner perhaps, but
+probably slower. Might be useful anyways, but only add if actually needed.
+
+- mmove a b n
+  copies b..b+n to a..a+n. expects a < b.
+
+* Intra-function labels, function labels, jumps and calls
+
+Intra-function jumps are relative (pc offsets).
+
+* Precise GC support
+
+Tag bits for now.
+_Try_ to make the C API generic enough to work with any.
+
+Options:
+- tag bits. sml does this.
+  pros:
+  + pretty efficient, space- & time-wise
+  cons:
+  + fucking the semantics of your language for its implementation.
+    ie. "ugh 31 bit ints."
+  + have to check for overflow.
+    nope, can just have mod-2^31 arithmetic.
+  + not strictly portable (but damn close).
+
+- gc metadata: structure tags(&maps?), register&stack maps
+  makes function call interface "interesting"
+  pros: the best.
+  cons: the hardest to implement.
+  nigh-impossible to use from a dynamically-typed source language.
+  consider (\x. f x)
+
+- large values (ugh large values). lua does this.
+  pros:
+  + can make doubles immediate too.
+  cons:
+  + memory inflation.
+  + slow?
+
+- no immediate numbers. python does this.
+  pros:
+  + balls simple.
+  cons:
+  + slooooow (esp if you don't cache small ints)
+
