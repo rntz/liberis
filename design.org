@@ -90,35 +90,42 @@ Tag bits for now.
 _Try_ to make the C API generic enough to work with any.
 
 Options:
-- tag bits. sml does this.
-  pros:
-  + pretty efficient, space- & time-wise
-  cons:
-  + fucking the semantics of your language for its implementation.
-    ie. "ugh 31 bit ints."
-  + have to check for overflow.
-    nope, can just have mod-2^31 arithmetic.
-  + not strictly portable (but damn close).
+1. tag bits. sml does this.
 
-- gc metadata: structure tags(&maps?), register&stack maps
-  makes function call interface "interesting"
-  pros: the best.
-  cons: the hardest to implement.
-  nigh-impossible to use from a dynamically-typed source language.
-  consider (\x. f x)
+   pros:
+   + pretty efficient, space- & time-wise
 
-- large values (ugh large values). lua does this.
-  pros:
-  + can make doubles immediate too.
-  cons:
-  + memory inflation.
-  + slow?
+   cons:
+   + not strictly portable (but damn close).
+   + fucking the semantics of your language for its implementation.
+     ie. "ugh 31 bit ints."
 
-- no immediate numbers. python does this.
-  pros:
-  + balls simple.
-  cons:
-  + slooooow (esp if you don't cache small ints)
+2. gc metadata: structure tags(&maps?), register&stack maps. makes function call
+   interface "interesting".
+
+   pros: the best.
+
+   cons:
+   + hardest to implement.
+   + nigh-impossible to use from a dynamically-typed source language.
+     consider (\x. f x)
+
+3. large values (ugh large values). lua does this.
+
+   pros:
+   + can make doubles immediate too.
+
+   cons:
+   + memory inflation.
+   + slow?
+
+4. no immediate numbers. python does this.
+
+   pros:
+   + balls simple.
+
+   cons:
+   + slooooow (esp if you don't cache small ints)
 
 
 * Instruction encoding notes
