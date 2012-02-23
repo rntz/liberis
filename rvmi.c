@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include "rvm.h"
+#include "rvm_vm.h"
 
 int main(int argc, char **argv)
 {

@@ -1,4 +1,4 @@
-#include "rvm.h"
+#include "rvm_vm.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -40,11 +40,13 @@ static inline rvm_object_t *valobj(rvm_val_t v)
 {
     if (!IS_OBJ(v))
         rvm_type_error("expected object, got int");
+    assert (v);
     return (rvm_object_t*) v;
 }
 
 static inline rvm_object_t *objof(rvm_tag_t tag, rvm_object_t *obj)
 {
+    assert (obj);
     if (obj->tag != tag)
         rvm_type_error("expected %d, got %d", tag, obj->tag);
     return obj;
@@ -61,16 +63,18 @@ static inline rvm_object_t *objof(rvm_tag_t tag, rvm_object_t *obj)
 #define VALSTRING(v) VALDATA(STRING, string, v)
 
 
-/* The main loop. */
+/* Useful stuff. */
 void rvm_run(rvm_state_t *state)
 {
     rvm_state_t S = *state;
-    rvm_val_t *regs = S.stack + S.base;
-#define REG(n)      (regs + (n))
+#define REG(n)      (S.regs + (n))
 #define REGVAL(n)   (*REG(n))
 
+    /* The ((void) 0)s that you see in the following code are garbage to appease
+     * the C99 spec, which allows only that a _statement_, not a _declaration_,
+     * follow a label or case. */
   begin:
-    (void)0;
+    (void) 0;
     rvm_instr_t instr = *(S.pc++);
 
     /* Use these macros only if their value is to be used only once. */
@@ -95,13 +99,46 @@ void rvm_run(rvm_state_t *state)
         *DEST = S.func.upvals[ARG2];
         break;
 
-      case RVM_OP_CALL:
-        (void)0;
-        rvm_val_t func_ref = S.func.upvals[ARG1];
-        uint8_t arg0_reg = ARG2;
-        uint8_t num_arg_regs = ARG3;
-        rvm_val_t func = *VALTUPLE(func_ref);
-        assert(func && num_arg_regs && arg0_reg && 0);
+      case RVM_OP_CALL: {
+          rvm_val_t func_ref = S.func.upvals[ARG1];
+          uint8_t arg0_reg = ARG2;
+          uint8_t nargs = ARG3;
+          rvm_closure_t *func = VALCLOSURE(VALTUPLE(func_ref)[0]);
+
+          /* Set up frame on control stack. */
+          rvm_frame_t *frame = ++S.frames;
+          frame->pc = S.pc;
+          frame->func = S.func;
+
+          /* Munge our state. */
+          S.func = *func;
+          S.regs += arg0_reg;
+          rvm_proto_t *proto = S.func.proto;
+          S.pc = proto->code;
+          if (nargs != proto->nargs) {
+              /* SLOW PATH. */
+              /* TODO: give gcc hint indicating this is unlikely. */
+              if (proto->variadic) {
+                  rvm_die("variadic function calls unimplemented");
+              }
+              rvm_arity_error("arity mismatch");
+          }
+      }
+        break;
+
+      case RVM_OP_RETURN: {
+          /* Put the return value where it ought to be. */
+          *REG(0) = *REG(ARG1);
+          rvm_frame_t *frame = S.frames--;
+          S.pc = frame->pc;
+          S.func = frame->func;
+          /* We figure how far to pop the stack by looking at the argument
+           * offset given in the CALL instruction that set up our frame, which
+           * is the one immediately preceding the pc that we return to.
+           */
+          S.regs -= RVMI_ARG2(*(S.pc - 1));
+      }
+        break;
 
       default:
         rvm_die("unrecognized or unimplemented opcode: %d", OP);

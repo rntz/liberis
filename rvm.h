@@ -1,8 +1,9 @@
-#ifndef _RVM_H
+#ifndef _RVM_H_
 #define _RVM_H_
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 /* Different instructions take different numbers of bytes to represent. However,
  * it behooves us to divide the instruction stream into fixed-size chunks such
@@ -21,6 +22,10 @@ typedef uint16_t rvm_longarg_t;
 typedef uintptr_t rvm_val_t;
 typedef uint32_t rvm_int_t;
 typedef uint8_t rvm_tag_t;
+
+typedef uint8_t rvm_regno_t;
+typedef uint8_t rvm_nargs_t;
+typedef uint8_t rvm_upvalno_t;
 
 /* Generated tables. */
 #include "enum_op.h"
@@ -42,6 +47,7 @@ typedef struct {
     rvm_instr_t *code;
     uint8_t nargs;
     uint8_t nupvals;
+    bool variadic;
 } rvm_proto_t;
 
 typedef struct {
@@ -63,16 +69,19 @@ typedef struct {
     } data;
 } rvm_object_t;
 
+typedef struct {
+    rvm_instr_t *pc;
+    rvm_closure_t func;
+} rvm_frame_t;
+
 /* TODO: Perhaps this should have a better name. */
 /* TODO: Distinguish between saved and active state structures of
  * interpreter. */
 typedef struct {
     rvm_instr_t *pc;
-    rvm_val_t *stack;
-    size_t base;
-    size_t stack_size;
+    rvm_val_t *regs;
+    rvm_frame_t *frames;        /* control/return stack */
     rvm_closure_t func;
-    /* TODO: call/control stack. */
 } rvm_state_t;
 
 #endif
