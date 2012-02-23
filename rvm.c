@@ -31,16 +31,37 @@ void rvm_arity_error(char *x, ...)
     (void) x;
 }
 
+
+/* Type converters. */
 #define IS_INT(x) (x & 1)
 #define IS_OBJ(x) (!IS_INT(x))
 
-static inline rvm_object_t *object(rvm_val_t v)
+static inline rvm_object_t *valobj(rvm_val_t v)
 {
     if (!IS_OBJ(v))
         rvm_type_error("expected object, got int");
     return (rvm_object_t*) v;
 }
 
+static inline rvm_object_t *objof(rvm_tag_t tag, rvm_object_t *obj)
+{
+    if (obj->tag != tag)
+        rvm_type_error("expected %d, got %d", tag, obj->tag);
+    return obj;
+}
+
+/* XXX: document */
+#define OBJDATA(tagname, member, obj)                   \
+    (&objof(RVM_TAG_##tagname, (obj))->data.member)
+
+#define VALDATA(tagname, member, value) OBJDATA(tagname, member, valobj(value))
+
+#define VALTUPLE(v) ((rvm_val_t*)*VALDATA(TUPLE, tuple, v))
+#define VALCLOSURE(v) VALDATA(CLOSURE, closure, v)
+#define VALSTRING(v) VALDATA(STRING, string, v)
+
+
+/* The main loop. */
 void rvm_run(rvm_state_t *state)
 {
     rvm_state_t S = *state;
@@ -79,10 +100,8 @@ void rvm_run(rvm_state_t *state)
         rvm_val_t func_ref = S.func.upvals[ARG1];
         uint8_t arg0_reg = ARG2;
         uint8_t num_arg_regs = ARG3;
-        object(func_ref);
-        assert(0);
-        /* XXX */
-        (void) arg0_reg, (void) num_arg_regs;
+        rvm_val_t func = *VALTUPLE(func_ref);
+        assert(func && num_arg_regs && arg0_reg && 0);
 
       default:
         rvm_die("unrecognized or unimplemented opcode: %d", OP);

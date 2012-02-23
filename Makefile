@@ -11,7 +11,7 @@ RVMI_SOURCES=rvmi rvm
 rvmi: $(addsuffix .o, $(RVMI_SOURCES))
 
 # Pattern rules
-%.o: %.c Makefile
+%.o: %.c Makefile config.mk
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(EXES): %:
@@ -25,7 +25,7 @@ depclean:
 	./depclean
 
 clean:
-	rm -f *.o
+	rm -f $(EXES) *.o
 
 pristine: clean depclean
 	rm -f $(ENUM_HEADERS)

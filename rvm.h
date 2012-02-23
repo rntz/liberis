@@ -50,11 +50,16 @@ typedef struct {
 } rvm_closure_t;
 
 typedef struct {
+    size_t len;
+    const char data[1];
+} rvm_string_t;
+
+typedef struct {
     rvm_tag_t tag;
     union {
         rvm_closure_t closure;
-        rvm_val_t values[1];
-        const char string[1];
+        rvm_string_t string;
+        rvm_val_t tuple[1];
     } data;
 } rvm_object_t;
 
