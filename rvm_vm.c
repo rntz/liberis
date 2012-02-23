@@ -1,13 +1,16 @@
-#include "rvm_vm.h"
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdarg.h>
 #include <assert.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "rvm_vm.h"
+#include "misc.h"
 
 void rvm_vdie(const char *fmt, va_list ap)
 {
     vfprintf(stderr, fmt, ap);
+    fprintf(stderr, "\n");
     exit(1);
 }
 
@@ -54,7 +57,7 @@ static inline rvm_object_t *objof(rvm_tag_t tag, rvm_object_t *obj)
 
 /* XXX: document */
 #define OBJDATA(tagname, member, obj)                   \
-    (&objof(RVM_TAG_##tagname, (obj))->data.member)
+    (&objof(CAT(RVM_TAG_,tagname), (obj))->data.member)
 
 #define VALDATA(tagname, member, value) OBJDATA(tagname, member, valobj(value))
 
@@ -63,7 +66,63 @@ static inline rvm_object_t *objof(rvm_tag_t tag, rvm_object_t *obj)
 #define VALSTRING(v) VALDATA(STRING, string, v)
 
 
-/* Useful stuff. */
+/* Helper functions for call instructions. */
+/* Does arity checking and conses excess variadic arguments. */
+static inline
+void rvm_precall(rvm_state_t *S, rvm_closure_t *func,
+                 rvm_reg_t offset, rvm_nargs_t nargs)
+{
+    if (nargs == func->proto->num_args) return;
+    /* TODO: give gcc hint indicating this is unlikely. */
+    if (func->proto->variadic) {
+        rvm_die("variadic function calls unimplemented");
+    }
+    else {
+        /* SLOWER PATH. */
+        /* TODO: give gcc hint indicating this is unlikely. */
+        rvm_arity_error("arity mismatch");
+    }
+    (void) S; (void) offset;    /* unused */
+}
+
+static inline
+void rvm_call(rvm_state_t *S, rvm_closure_t *func,
+              rvm_reg_t offset, rvm_nargs_t nargs)
+{
+    rvm_precall(S, func, offset, nargs);
+
+    /* Push return frame on control stack. */
+    rvm_frame_t *frame = ++S->frames;
+    frame->pc = S->pc;
+    frame->func = S->func;
+
+    /* Munge our state. */
+    S->func = *func;
+    S->regs += offset;
+    S->pc = S->func.proto->code;
+}
+
+static inline
+void rvm_tailcall(rvm_state_t *S, rvm_closure_t *func,
+                  rvm_reg_t offset, rvm_nargs_t nargs)
+{
+    rvm_precall(S, func, offset, nargs);
+
+    /* Munge our state. */
+    S->func = *func;
+    S->pc = S->func.proto->code;
+    /* Move down the arguments into appropriate slots. */
+    memmove(S->regs, S->regs + offset, sizeof(rvm_val_t) * nargs);
+}
+
+
+/* The main loop */
+
+/* TODO: currently we do no cleaning-up of the stack, ever. unless we annotate
+ * functions with live ranges for registers, this makes gc extra-conservative in
+ * a very unpredictable way. highly undesirable, could cause long-lived garbage.
+ */
+
 void rvm_run(rvm_state_t *state)
 {
     rvm_state_t S = *state;
@@ -75,7 +134,7 @@ void rvm_run(rvm_state_t *state)
      * follow a label or case. */
   begin:
     (void) 0;
-    rvm_instr_t instr = *(S.pc++);
+    const rvm_instr_t instr = *(S.pc++);
 
     /* Use these macros only if their value is to be used only once. */
 #define OP   RVMI_OP(instr)
@@ -86,6 +145,7 @@ void rvm_run(rvm_state_t *state)
 #define DEST REG(ARG1)
 
     switch (OP) {
+        /* TODO: order by frequency. */
       case RVM_OP_MOVE:
         *DEST = *REG(ARG2);
         break;
@@ -99,33 +159,30 @@ void rvm_run(rvm_state_t *state)
         *DEST = S.func.upvals[ARG2];
         break;
 
-      case RVM_OP_CALL: {
-          rvm_val_t func_ref = S.func.upvals[ARG1];
-          uint8_t arg0_reg = ARG2;
-          uint8_t nargs = ARG3;
-          rvm_closure_t *func = VALCLOSURE(VALTUPLE(func_ref)[0]);
+
+        /* Call instructions. */
+        /* TODO: document these macros */
+#define CALL_FUNC VALCLOSURE(VALTUPLE(S.func.upvals[ARG1])[0])
+#define CALL_REG_FUNC VALCLOSURE(*REG(ARG1))
 
-          /* Set up frame on control stack. */
-          rvm_frame_t *frame = ++S.frames;
-          frame->pc = S.pc;
-          frame->func = S.func;
-
-          /* Munge our state. */
-          S.func = *func;
-          S.regs += arg0_reg;
-          rvm_proto_t *proto = S.func.proto;
-          S.pc = proto->code;
-          if (nargs != proto->nargs) {
-              /* SLOW PATH. */
-              /* TODO: give gcc hint indicating this is unlikely. */
-              if (proto->variadic) {
-                  rvm_die("variadic function calls unimplemented");
-              }
-              rvm_arity_error("arity mismatch");
-          }
-      }
+      case RVM_OP_CALL:
+        rvm_call(&S, CALL_FUNC, ARG2, ARG3);
         break;
 
+      case RVM_OP_CALL_REG:
+        rvm_call(&S, CALL_REG_FUNC, ARG2, ARG3);
+        break;
+
+      case RVM_OP_TAILCALL:
+        rvm_tailcall(&S, CALL_FUNC, ARG2, ARG3);
+        break;
+
+      case RVM_OP_TAILCALL_REG:
+        rvm_tailcall(&S, CALL_REG_FUNC, ARG2, ARG3);
+        break;
+
+
+        /* Other instructions. */
       case RVM_OP_RETURN: {
           /* Put the return value where it ought to be. */
           *REG(0) = *REG(ARG1);

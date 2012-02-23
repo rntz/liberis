@@ -23,9 +23,9 @@ typedef uintptr_t rvm_val_t;
 typedef uint32_t rvm_int_t;
 typedef uint8_t rvm_tag_t;
 
-typedef uint8_t rvm_regno_t;
+typedef uint8_t rvm_reg_t;
 typedef uint8_t rvm_nargs_t;
-typedef uint8_t rvm_upvalno_t;
+typedef uint8_t rvm_upval_t;
 
 /* Generated tables. */
 #include "enum_op.h"
@@ -45,13 +45,16 @@ typedef uint8_t rvm_upvalno_t;
 /* Data structures. */
 typedef struct {
     rvm_instr_t *code;
-    uint8_t nargs;
-    uint8_t nupvals;
+    rvm_nargs_t num_args;
+    rvm_upval_t num_upvals;
     bool variadic;
 } rvm_proto_t;
 
 typedef struct {
     rvm_proto_t *proto;
+    /* couldn't we just include these in the closure? */
+    /* not if we want to put closure inside rvm_state_t & rvm_frame_t. :( */
+    /* hmmm. */
     rvm_val_t *upvals;
 } rvm_closure_t;
 

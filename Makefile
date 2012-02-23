@@ -7,7 +7,7 @@ include config.mk
 EXES=rvmi
 all: $(EXES)
 
-RVMI_SOURCES=rvmi rvm
+RVMI_SOURCES=rvmi rvm_vm
 rvmi: $(addsuffix .o, $(RVMI_SOURCES))
 
 # Pattern rules
