@@ -55,26 +55,39 @@ typedef struct {
     /* couldn't we just include these in the closure? */
     /* not if we want to put closure inside rvm_state_t & rvm_frame_t. :( */
     /* hmmm. */
-    rvm_val_t *upvals;
+    rvm_val_t upvals[];
 } rvm_closure_t;
+
+/* TODO: decide re unicode & encoding stuff. */
+typedef struct {
+    size_t len;
+    const char data[];
+} rvm_string_t;
+
+typedef struct {
+    rvm_val_t car;
+    rvm_val_t cdr;
+} rvm_cons_t;
 
 typedef struct {
     size_t len;
-    const char data[1];
-} rvm_string_t;
+    rvm_val_t data[];
+} rvm_vec_t;
 
 typedef struct {
     rvm_tag_t tag;
     union {
         rvm_closure_t closure;
+        rvm_cons_t cons;
         rvm_string_t string;
-        rvm_val_t tuple[1];
+        rvm_val_t ref;
+        rvm_vec_t vec;
     } data;
 } rvm_object_t;
 
 typedef struct {
     rvm_instr_t *pc;
-    rvm_closure_t func;
+    rvm_closure_t *func;
 } rvm_frame_t;
 
 /* TODO: Perhaps this should have a better name. */
@@ -84,7 +97,7 @@ typedef struct {
     rvm_instr_t *pc;
     rvm_val_t *regs;
     rvm_frame_t *frames;        /* control/return stack */
-    rvm_closure_t func;
+    rvm_closure_t *func;
 } rvm_state_t;
 
 #endif

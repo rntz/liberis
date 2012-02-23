@@ -39,7 +39,9 @@ void rvm_arity_error(char *x, ...)
 #define IS_INT(x) (x & 1)
 #define IS_OBJ(x) (!IS_INT(x))
 
-static inline rvm_object_t *valobj(rvm_val_t v)
+#define OBJ_VAL(obj) ((rvm_val_t) (obj))
+
+static inline rvm_object_t *val_obj(rvm_val_t v)
 {
     if (!IS_OBJ(v))
         rvm_type_error("expected object, got int");
@@ -47,7 +49,9 @@ static inline rvm_object_t *valobj(rvm_val_t v)
     return (rvm_object_t*) v;
 }
 
-static inline rvm_object_t *objof(rvm_tag_t tag, rvm_object_t *obj)
+#define VAL_OBJ(obj) val_obj((obj))
+
+static inline rvm_object_t *obj_isa(rvm_tag_t tag, rvm_object_t *obj)
 {
     assert (obj);
     if (obj->tag != tag)
@@ -55,15 +59,16 @@ static inline rvm_object_t *objof(rvm_tag_t tag, rvm_object_t *obj)
     return obj;
 }
 
-/* XXX: document */
-#define OBJDATA(tagname, member, obj)                   \
-    (&objof(CAT(RVM_TAG_,tagname), (obj))->data.member)
+#define OBJ_ISA(tag, obj) obj_isa(CAT(RVM_TAG_, tag), (obj))
+#define OBJ_AS(tag, member, obj) (&OBJ_ISA(tag, obj)->data.member)
+#define VAL_AS(tag, member, value) OBJ_AS(tag, member, VAL_OBJ(value))
 
-#define VALDATA(tagname, member, value) OBJDATA(tagname, member, valobj(value))
+#define VAL_CLOSURE(v) VAL_AS(CLOSURE, closure, v)
+#define VAL_CONS(v) VAL_AS(CONS, cons, v)
+#define VAL_REF(v) VAL_AS(REF, ref, v)
+#define VAL_STRING(v) VAL_AS(STRING, string, v)
 
-#define VALTUPLE(v) ((rvm_val_t*)*VALDATA(TUPLE, tuple, v))
-#define VALCLOSURE(v) VALDATA(CLOSURE, closure, v)
-#define VALSTRING(v) VALDATA(STRING, string, v)
+#define OBJ_IS_NIL(obj) ((obj)->tag == RVM_TAG_NIL)
 
 
 /* Helper functions for call instructions. */
@@ -96,10 +101,10 @@ void rvm_call(rvm_state_t *S, rvm_closure_t *func,
     frame->pc = S->pc;
     frame->func = S->func;
 
-    /* Munge our state. */
-    S->func = *func;
+    /* Jump into the function. */
+    S->func = func;
     S->regs += offset;
-    S->pc = S->func.proto->code;
+    S->pc = S->func->proto->code;
 }
 
 static inline
@@ -108,9 +113,9 @@ void rvm_tailcall(rvm_state_t *S, rvm_closure_t *func,
 {
     rvm_precall(S, func, offset, nargs);
 
-    /* Munge our state. */
-    S->func = *func;
-    S->pc = S->func.proto->code;
+    /* Jump into the function. */
+    S->func = func;
+    S->pc = S->func->proto->code;
     /* Move down the arguments into appropriate slots. */
     memmove(S->regs, S->regs + offset, sizeof(rvm_val_t) * nargs);
 }
@@ -144,26 +149,27 @@ void rvm_run(rvm_state_t *state)
 #define LONGARG2 RVMI_LONGARG2(instr)
 #define DEST REG(ARG1)
 
+    /* TODO: order cases by frequency. */
     switch (OP) {
-        /* TODO: order by frequency. */
       case RVM_OP_MOVE:
         *DEST = *REG(ARG2);
         break;
 
       case RVM_OP_LOAD_INT:
         /* Tag the integer appropriately. */
+        /* TODO: factor out into macros. */
         *DEST = ((rvm_val_t)LONGARG2 << 1) | 1;
         break;
 
       case RVM_OP_LOAD_UPVAL:
-        *DEST = S.func.upvals[ARG2];
+        *DEST = S.func->upvals[ARG2];
         break;
 
 
         /* Call instructions. */
         /* TODO: document these macros */
-#define CALL_FUNC VALCLOSURE(VALTUPLE(S.func.upvals[ARG1])[0])
-#define CALL_REG_FUNC VALCLOSURE(*REG(ARG1))
+#define CALL_FUNC VAL_CLOSURE(*VAL_REF(S.func->upvals[ARG1]))
+#define CALL_REG_FUNC VAL_CLOSURE(*REG(ARG1))
 
       case RVM_OP_CALL:
         rvm_call(&S, CALL_FUNC, ARG2, ARG3);
