@@ -1,6 +1,7 @@
 #ifndef _RVM_H
 #define _RVM_H_
 
+#include <stddef.h>
 #include <stdint.h>
 
 /* Different instructions take different numbers of bytes to represent. However,
@@ -13,21 +14,60 @@
  * the choice that best satisfies these goals.
  */
 typedef uint32_t rvm_instr_t;
-typedef uint8_t rvm_opcode_t;
-typedef uint8_t rvm_arg_t;
-typedef uint8_t rvm_longarg_t;
+typedef  uint8_t rvm_op_t;
+typedef  uint8_t rvm_arg_t;
+typedef uint16_t rvm_longarg_t;
 
-/* Generated table of instr opcodes. */
-#include "opcodes.h"
+typedef uintptr_t rvm_val_t;
+typedef uint32_t rvm_int_t;
+typedef uint8_t rvm_tag_t;
+
+/* Generated tables. */
+#include "enum_op.h"
+#include "enum_tag.h"
 
 /* The magic constants used here are obvious, but will change if instruction
  * encoding scheme changes. */
-/* RVM_INSTR_ARG0 is used by instructions spanning multiple rvm_instr_ts. */
-#define RVM_INSTR_OPCODE(instr)     ((rvm_opcode_t)(instr))
-#define RVM_INSTR_ARG0(instr)       ((rvm_arg_t)(instr))
-#define RVM_INSTR_ARG1(instr)       ((rvm_arg_t)((instr) >> 8))
-#define RVM_INSTR_ARG2(instr)       ((rvm_arg_t)((instr) >> 16))
-#define RVM_INSTR_ARG3(instr)       ((rvm_arg_t)((instr) >> 24))
-#define RVM_INSTR_LONGARG2(instr)   ((rvm_longarg_t)((instr) >> 16))
+/* RVMI_ARG0 is used by instructions spanning multiple rvm_instr_ts. */
+#define RVMI_OP(instr)          ((rvm_op_t)(instr))
+#define RVMI_ARG0(instr)        ((rvm_arg_t)(instr))
+#define RVMI_ARG1(instr)        ((rvm_arg_t)((instr) >> 8))
+#define RVMI_ARG2(instr)        ((rvm_arg_t)((instr) >> 16))
+#define RVMI_ARG3(instr)        ((rvm_arg_t)((instr) >> 24))
+#define RVMI_LONGARG2(instr)    ((rvm_longarg_t)((instr) >> 16))
+
+
+/* Data structures. */
+typedef struct {
+    rvm_instr_t *code;
+    uint8_t nargs;
+    uint8_t nupvals;
+} rvm_proto_t;
+
+typedef struct {
+    rvm_proto_t *proto;
+    rvm_val_t *upvals;
+} rvm_closure_t;
+
+typedef struct {
+    rvm_tag_t tag;
+    union {
+        rvm_closure_t closure;
+        rvm_val_t values[1];
+        const char string[1];
+    } data;
+} rvm_object_t;
+
+/* TODO: Perhaps this should have a better name. */
+/* TODO: Distinguish between saved and active state structures of
+ * interpreter. */
+typedef struct {
+    rvm_instr_t *pc;
+    rvm_val_t *stack;
+    size_t base;
+    size_t stack_size;
+    rvm_closure_t func;
+    /* TODO: call/control stack. */
+} rvm_state_t;
 
 #endif

@@ -1,0 +1,26 @@
+# format is whitespace-separated columns
+# columns: OP CODE
+# meanings of columns:
+# OP:
+#   Name of opcode. Must be a valid C macro name.
+# CODE:
+#   The encoding of the opcode. May be omitted, in which case an encoding
+#   is generated. If specified, must be between 0 and 255 inclusive.
+
+MOVE
+LOAD_INT
+LOAD_UPVAL
+
+# calls and jumps
+CALL
+CALL_REG
+TAILCALL
+TAILCALL_REG
+JUMP
+RETURN
+
+# comparisons
+CMP
+
+# miscellany
+CLOSE

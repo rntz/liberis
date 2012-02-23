@@ -1,2 +1,4 @@
-/opcodes
 *.dep
+/enum_*.h
+*.o
+/rvmi
