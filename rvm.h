@@ -52,9 +52,6 @@ typedef struct {
 
 typedef struct {
     rvm_proto_t *proto;
-    /* couldn't we just include these in the closure? */
-    /* not if we want to put closure inside rvm_state_t & rvm_frame_t. :( */
-    /* hmmm. */
     rvm_val_t upvals[];
 } rvm_closure_t;
 
@@ -77,6 +74,9 @@ typedef struct {
 typedef struct {
     rvm_tag_t tag;
     union {
+        /* NOT C99 SPEC: rvm_{closure,string,vec}_t are structs w/ flex array
+         * members. we can't embed them in a union, by spec.
+         */
         rvm_closure_t closure;
         rvm_cons_t cons;
         rvm_string_t string;
