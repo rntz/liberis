@@ -189,18 +189,33 @@ void rvm_run(rvm_state_t *state)
 
 
         /* Other instructions. */
-      case RVM_OP_RETURN: {
-          /* Put the return value where it ought to be. */
-          *REG(0) = *REG(ARG1);
-          rvm_frame_t *frame = S.frames--;
-          S.pc = frame->pc;
-          S.func = frame->func;
-          /* We figure how far to pop the stack by looking at the argument
-           * offset given in the CALL instruction that set up our frame, which
-           * is the one immediately preceding the pc that we return to.
-           */
-          S.regs -= RVMI_ARG2(*(S.pc - 1));
-      }
+      case RVM_OP_JUMP:
+        /* Note that we offset from the _current_ pc, which is one greater than
+         * the pc as it was when we read the jump instruction. A jump's
+         * argument, therefore, notionally says "how many instructions to skip".
+         * In the presence of instructions taking multiple instr_ts to encode,
+         * this is not quite the case, of course. And negative jumps are
+         * required for loops.
+         */
+        /* NOT C99 SPEC: unsigned to signed integer conversion is
+         * implementation-defined or may raise a signal when the unsigned value
+         * is not representable in the signed target type. We depend on
+         * 2's-complement representation, with this cast being a no-op.
+         */
+        S.pc += (rvm_jump_offset_t) LONGARG2;
+        break;
+
+      case RVM_OP_RETURN: (void) 0;
+        /* Put the return value where it ought to be. */
+        *REG(0) = *REG(ARG1);
+        rvm_frame_t *frame = S.frames--;
+        S.pc = frame->pc;
+        S.func = frame->func;
+        /* We figure how far to pop the stack by looking at the argument
+         * offset given in the CALL instruction that set up our frame, which
+         * is the one immediately preceding the pc that we return to.
+         */
+        S.regs -= RVMI_ARG2(*(S.pc - 1));
         break;
 
       default:
