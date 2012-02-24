@@ -14,18 +14,19 @@
  * On x86 and x86-64, the platforms we care about most, 4-byte chunks are
  * the choice that best satisfies these goals.
  */
-typedef uint32_t rvm_instr_t;
-typedef  uint8_t rvm_op_t;
-typedef  uint8_t rvm_arg_t;
-typedef uint16_t rvm_longarg_t;
+typedef  uint32_t   rvm_instr_t;
+typedef   uint8_t   rvm_op_t;
+typedef   uint8_t   rvm_arg_t;
+typedef  uint16_t   rvm_longarg_t;
+typedef   int16_t   rvm_jump_offset_t;
 
-typedef uintptr_t rvm_val_t;
-typedef uint32_t rvm_int_t;
-typedef uint8_t rvm_tag_t;
+typedef uintptr_t   rvm_val_t;
+typedef  uint32_t   rvm_int_t;
+typedef   uint8_t   rvm_tag_t;
 
-typedef uint8_t rvm_reg_t;
-typedef uint8_t rvm_nargs_t;
-typedef uint8_t rvm_upval_t;
+typedef   uint8_t   rvm_reg_t;
+typedef   uint8_t   rvm_nargs_t;
+typedef   uint8_t   rvm_upval_t;
 
 /* Generated tables. */
 #include "enum_op.h"
