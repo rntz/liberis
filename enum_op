@@ -11,7 +11,7 @@ MOVE
 LOAD_INT
 LOAD_UPVAL
 
-# calls and jumps
+# unconditional control flow operators
 CALL
 CALL_REG
 TAILCALL
@@ -19,8 +19,9 @@ TAILCALL_REG
 JUMP
 RETURN
 
-# comparisons
-CMP
+# conditional control flow operators
+IF
+IFNOT
 
 # miscellany
 CLOSE
