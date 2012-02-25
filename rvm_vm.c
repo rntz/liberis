@@ -246,7 +246,7 @@ void rvm_run(rvm_state_t *state)
         break;
 
       case RVM_OP_IFNOT:
-        do_cond (&S, VAL_IS_NIL(*REG(ARG1)));
+        do_cond(&S, VAL_IS_NIL(*REG(ARG1)));
         break;
 
       default:
