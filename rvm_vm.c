@@ -82,8 +82,8 @@ static inline rvm_obj_t *obj_check_tag(rvm_tag_t tag, rvm_obj_t *obj)
 /* Helper functions for call instructions. */
 /* Does arity checking and conses excess variadic arguments. */
 static inline
-void rvm_precall(rvm_state_t *S, rvm_closure_t *func,
-                 rvm_reg_t offset, rvm_nargs_t nargs)
+void do_precall(rvm_state_t *S, rvm_closure_t *func,
+                rvm_reg_t offset, rvm_nargs_t nargs)
 {
     if (nargs == func->proto->num_args) return;
     /* TODO: give gcc hint indicating this is unlikely. */
@@ -99,10 +99,10 @@ void rvm_precall(rvm_state_t *S, rvm_closure_t *func,
 }
 
 static inline
-void rvm_call(rvm_state_t *S, rvm_closure_t *func,
-              rvm_reg_t offset, rvm_nargs_t nargs)
+void do_call(rvm_state_t *S, rvm_closure_t *func,
+             rvm_reg_t offset, rvm_nargs_t nargs)
 {
-    rvm_precall(S, func, offset, nargs);
+    do_precall(S, func, offset, nargs);
 
     /* Push return frame on control stack. */
     rvm_frame_t *frame = ++S->frames;
@@ -116,16 +116,32 @@ void rvm_call(rvm_state_t *S, rvm_closure_t *func,
 }
 
 static inline
-void rvm_tailcall(rvm_state_t *S, rvm_closure_t *func,
-                  rvm_reg_t offset, rvm_nargs_t nargs)
+void do_tailcall(rvm_state_t *S, rvm_closure_t *func,
+                 rvm_reg_t offset, rvm_nargs_t nargs)
 {
-    rvm_precall(S, func, offset, nargs);
+    do_precall(S, func, offset, nargs);
 
     /* Jump into the function. */
     S->func = func;
     S->pc = S->func->proto->code;
     /* Move down the arguments into appropriate slots. */
     memmove(S->regs, S->regs + offset, sizeof(rvm_val_t) * nargs);
+}
+
+static inline
+void do_cond(rvm_state_t *S, bool cond)
+{
+    /* The instruction after a conditional is required to be a jump. */
+    assert (RVMI_OP(S->pc[1]) == RVM_OP_JUMP);
+
+    if (cond)
+        /* Skip next instruction. */
+        S->pc += 2;
+    else
+        /* Make the following jump. (1 + ...) because the current pc is 1
+         * behind that of the jump instruction.
+         */
+        S->pc += 1 + (rvm_jump_offset_t) RVMI_LONGARG2(*(S->pc + 1));
 }
 
 
@@ -183,19 +199,19 @@ void rvm_run(rvm_state_t *state)
 #define CALL_REG_FUNC VAL_CLOSURE(*REG(ARG1))
 
       case RVM_OP_CALL:
-        rvm_call(&S, CALL_FUNC, ARG2, ARG3);
+        do_call(&S, CALL_FUNC, ARG2, ARG3);
         break;
 
       case RVM_OP_CALL_REG:
-        rvm_call(&S, CALL_REG_FUNC, ARG2, ARG3);
+        do_call(&S, CALL_REG_FUNC, ARG2, ARG3);
         break;
 
       case RVM_OP_TAILCALL:
-        rvm_tailcall(&S, CALL_FUNC, ARG2, ARG3);
+        do_tailcall(&S, CALL_FUNC, ARG2, ARG3);
         break;
 
       case RVM_OP_TAILCALL_REG:
-        rvm_tailcall(&S, CALL_REG_FUNC, ARG2, ARG3);
+        do_tailcall(&S, CALL_REG_FUNC, ARG2, ARG3);
         break;
 
 
@@ -225,17 +241,12 @@ void rvm_run(rvm_state_t *state)
         S.func = frame->func;
         break;
 
-      case RVM_OP_IF: (void) 0;
-        /* The instruction after a conditional is required to be a jump. */
-        assert (RVMI_OP(S.pc[1]) == RVM_OP_JUMP);
-        if (!VAL_IS_NIL(*REG(ARG1)))
-            /* Skip next instruction. */
-            S.pc += 2;
-        else
-            /* Make the following jump. (1 + ...) because the current pc is 1
-             * behind that of the jump instruction.
-             */
-            S.pc += 1 + (rvm_jump_offset_t) RVMI_LONGARG2(*(S.pc + 1));
+      case RVM_OP_IF:
+        do_cond(&S, !VAL_IS_NIL(*REG(ARG1)));
+        break;
+
+      case RVM_OP_IFNOT:
+        do_cond (&S, VAL_IS_NIL(*REG(ARG1)));
         break;
 
       default:
