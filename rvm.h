@@ -84,7 +84,7 @@ typedef struct {
         rvm_val_t ref;
         rvm_vec_t vec;
     } data;
-} rvm_object_t;
+} rvm_obj_t;
 
 typedef struct {
     rvm_instr_t *pc;

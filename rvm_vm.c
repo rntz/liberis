@@ -35,23 +35,34 @@ void rvm_arity_error(char *x, ...)
 }
 
 
-/* Type converters. */
+/* Type converters and other conveniences. */
+#define TAG(tagname) CAT(RVM_TAG_,tagname)
+
 #define IS_INT(x) (x & 1)
 #define IS_OBJ(x) (!IS_INT(x))
 
 #define OBJ_VAL(obj) ((rvm_val_t) (obj))
 
-static inline rvm_object_t *val_obj(rvm_val_t v)
+#define VAL_OBJ val_obj
+static inline rvm_obj_t *val_obj(rvm_val_t v)
 {
     if (!IS_OBJ(v))
         rvm_type_error("expected object, got int");
     assert (v);
-    return (rvm_object_t*) v;
+    return (rvm_obj_t*) v;
 }
 
-#define VAL_OBJ(obj) val_obj((obj))
+#define OBJ_ISA(tagname, obj) ((obj)->tag == TAG(tagname))
+#define OBJ_IS_NIL(obj) OBJ_ISA(NIL, obj)
 
-static inline rvm_object_t *obj_isa(rvm_tag_t tag, rvm_object_t *obj)
+#define VAL_IS_NIL val_is_nil
+static inline bool val_is_nil(rvm_val_t v)
+{
+    return IS_OBJ(v) && OBJ_IS_NIL((rvm_obj_t*)v);
+}
+
+#define OBJ_CHECK_TAG(tag, obj) obj_check_tag(CAT(RVM_TAG_, tag), (obj))
+static inline rvm_obj_t *obj_check_tag(rvm_tag_t tag, rvm_obj_t *obj)
 {
     assert (obj);
     if (obj->tag != tag)
@@ -59,16 +70,13 @@ static inline rvm_object_t *obj_isa(rvm_tag_t tag, rvm_object_t *obj)
     return obj;
 }
 
-#define OBJ_ISA(tag, obj) obj_isa(CAT(RVM_TAG_, tag), (obj))
-#define OBJ_AS(tag, member, obj) (&OBJ_ISA(tag, obj)->data.member)
-#define VAL_AS(tag, member, value) OBJ_AS(tag, member, VAL_OBJ(value))
+#define OBJ_AS(tagname, member, obj) (&OBJ_CHECK_TAG(tagname, obj)->data.member)
+#define VAL_AS(tagname, member, value) OBJ_AS(tagname, member, VAL_OBJ(value))
 
 #define VAL_CLOSURE(v) VAL_AS(CLOSURE, closure, v)
 #define VAL_CONS(v) VAL_AS(CONS, cons, v)
 #define VAL_REF(v) VAL_AS(REF, ref, v)
 #define VAL_STRING(v) VAL_AS(STRING, string, v)
-
-#define OBJ_IS_NIL(obj) ((obj)->tag == RVM_TAG_NIL)
 
 
 /* Helper functions for call instructions. */
@@ -139,7 +147,7 @@ void rvm_run(rvm_state_t *state)
      * follow a label or case. */
   begin:
     (void) 0;
-    const rvm_instr_t instr = *(S.pc++);
+    const rvm_instr_t instr = *S.pc;
 
     /* Use these macros only if their value is to be used only once. */
 #define OP   RVMI_OP(instr)
@@ -153,16 +161,19 @@ void rvm_run(rvm_state_t *state)
     switch (OP) {
       case RVM_OP_MOVE:
         *DEST = *REG(ARG2);
+        ++S.pc;
         break;
 
       case RVM_OP_LOAD_INT:
         /* Tag the integer appropriately. */
         /* TODO: factor out into macros. */
         *DEST = ((rvm_val_t)LONGARG2 << 1) | 1;
+        ++S.pc;
         break;
 
       case RVM_OP_LOAD_UPVAL:
         *DEST = S.func->upvals[ARG2];
+        ++S.pc;
         break;
 
 
@@ -190,17 +201,14 @@ void rvm_run(rvm_state_t *state)
 
         /* Other instructions. */
       case RVM_OP_JUMP:
-        /* Note that we offset from the _current_ pc, which is one greater than
-         * the pc as it was when we read the jump instruction. A jump's
-         * argument, therefore, notionally says "how many instructions to skip".
-         * In the presence of instructions taking multiple instr_ts to encode,
-         * this is not quite the case, of course. And negative jumps are
-         * required for loops.
-         */
         /* NOT C99 SPEC: unsigned to signed integer conversion is
          * implementation-defined or may raise a signal when the unsigned value
          * is not representable in the signed target type. We depend on
          * 2's-complement representation, with this cast being a no-op.
+         *
+         * TODO: It should be possible to fix this by explicitly doing the
+         * appropriate modulo arithmetic, and if gcc & clang are smart enough
+         * this will compile into a nop on x86(-64). Should test this, though.
          */
         S.pc += (rvm_jump_offset_t) LONGARG2;
         break;
@@ -209,13 +217,25 @@ void rvm_run(rvm_state_t *state)
         /* Put the return value where it ought to be. */
         *REG(0) = *REG(ARG1);
         rvm_frame_t *frame = S.frames--;
-        S.pc = frame->pc;
-        S.func = frame->func;
-        /* We figure how far to pop the stack by looking at the argument
-         * offset given in the CALL instruction that set up our frame, which
-         * is the one immediately preceding the pc that we return to.
+        /* We determine how far to pop the stack by looking at the argument
+         * offset given in the CALL instruction that set up our frame.
          */
-        S.regs -= RVMI_ARG2(*(S.pc - 1));
+        S.regs -= RVMI_ARG2(*frame->pc);
+        S.pc = frame->pc + 1;   /* +1 to skip past the call instr. */
+        S.func = frame->func;
+        break;
+
+      case RVM_OP_IF: (void) 0;
+        /* The instruction after a conditional is required to be a jump. */
+        assert (RVMI_OP(S.pc[1]) == RVM_OP_JUMP);
+        if (!VAL_IS_NIL(*REG(ARG1)))
+            /* Skip next instruction. */
+            S.pc += 2;
+        else
+            /* Make the following jump. (1 + ...) because the current pc is 1
+             * behind that of the jump instruction.
+             */
+            S.pc += 1 + (rvm_jump_offset_t) RVMI_LONGARG2(*(S.pc + 1));
         break;
 
       default:
