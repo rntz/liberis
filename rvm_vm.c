@@ -36,8 +36,6 @@ void rvm_arity_error(char *x, ...)
 
 
 /* Type converters and other conveniences. */
-#define TAG(tagname) CAT(RVM_TAG_,tagname)
-
 #define IS_INT(x) (x & 1)
 #define IS_OBJ(x) (!IS_INT(x))
 
@@ -52,6 +50,7 @@ static inline rvm_obj_t *val_obj(rvm_val_t v)
     return (rvm_obj_t*) v;
 }
 
+#define TAG(tagname) CAT(RVM_TAG_,tagname)
 #define OBJ_ISA(tagname, obj) ((obj)->tag == TAG(tagname))
 #define OBJ_IS_NIL(obj) OBJ_ISA(NIL, obj)
 
