@@ -132,6 +132,9 @@ Options:
 
 ** Comparisons
 
+This section is irrelevant for now, since we're not actually including an
+integer comparison instruction yet.
+
 Encoding comparisons is an interesting design point.
 
 We take two operands, and each one could be register, upval, or immediate,
@@ -145,7 +148,7 @@ imm) of each operand.
 
 We can make do with only two comparison operations (eg. LEQ, EQ) if we're
 willing to be constrained as to which branch goes where. Otherwise we want four
-(LEQ, LT, EQ, NEQ). Taking the conditional is cheaper than not taking it, since
+(LT, GEQ, EQ, NEQ). Taking the conditional is cheaper than not taking it, since
 we just skip over next instruction without reading it. So not constraining
 enables better optimization/performance-tweaking.
 
@@ -161,3 +164,7 @@ types the operands have (reg, upval, or imm) and (b) which comparison is desired
 and. (a) is encoded in 4 bits (with the immediate/immediate case representable
 but outlawed; this prohibition may or may not be enforced by the bytecode
 interpreter) and (b) in 2 bits, so the whole thing can fit in a byte.
+
+If we want our comparison ops to also support floating-point operands with IEEE
+semantics, the story gets even more complicated. I'm not worrying about that for
+now.
