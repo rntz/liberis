@@ -1,26 +1,10 @@
 #include <assert.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
+#include "rvm.h"
 #include "rvm_vm.h"
+#include "rvm_runtime.h"
 #include "misc.h"
-
-void rvm_vdie(const char *fmt, va_list ap)
-{
-    vfprintf(stderr, fmt, ap);
-    fprintf(stderr, "\n");
-    exit(1);
-}
-
-void rvm_die(const char *fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
-    rvm_vdie(fmt, ap);
-    va_end(ap);                 /* unreachable */
-}
 
 void rvm_type_error(char *x, ...)
 {
@@ -36,6 +20,21 @@ void rvm_arity_error(char *x, ...)
 
 
 /* Type converters and other conveniences. */
+#define TAG(tagname) CAT(RVM_TAG_,tagname)
+
+/* Mallocers. */
+#define membersize(type, mem) sizeof(((type*)NULL)->mem)
+
+#define NEW_PLUS(tag, mem, extra)                                       \
+    (&rvm_new(TAG(tag), membersize(rvm_obj_t, data.mem) + (extra))->data.mem)
+
+#define NEW(tag, mem) NEW_PLUS(tag, mem, 0)
+
+#define NEW_WITH(tag, mem, elem_mem, nelems)                            \
+    NEW_PLUS(tag, mem, nelems * membersize(rvm_obj_t, data.mem.elem_mem[0]))
+
+#define NEW_CLOSURE(nupvals) NEW_WITH(CLOSURE, closure, upvals, nupvals)
+
 #define IS_INT(x) (x & 1)
 #define IS_OBJ(x) (!IS_INT(x))
 
@@ -50,7 +49,6 @@ static inline rvm_obj_t *val_obj(rvm_val_t v)
     return (rvm_obj_t*) v;
 }
 
-#define TAG(tagname) CAT(RVM_TAG_,tagname)
 #define OBJ_ISA(tagname, obj) ((obj)->tag == TAG(tagname))
 #define OBJ_IS_NIL(obj) OBJ_ISA(NIL, obj)
 
@@ -74,8 +72,28 @@ static inline rvm_obj_t *obj_check_tag(rvm_tag_t tag, rvm_obj_t *obj)
 
 #define VAL_CLOSURE(v) VAL_AS(CLOSURE, closure, v)
 #define VAL_CONS(v) VAL_AS(CONS, cons, v)
-#define VAL_REF(v) VAL_AS(REF, ref, v)
 #define VAL_STRING(v) VAL_AS(STRING, string, v)
+
+/* This is to be used only in cases where we statically know that v is a "global
+ * cell". TODO: explain global cells somwhere in docs & reference here. */
+static inline rvm_global_t *get_global(rvm_val_t v)
+{
+    assert (IS_OBJ(v));
+    rvm_obj_t *obj = (rvm_obj_t*) v;
+    assert (OBJ_ISA(GLOBAL, obj));
+    return &obj->data.global;
+}
+
+static inline rvm_val_t deref_global(rvm_global_t *g)
+{
+    if (!g->val) {
+        /* Global is undefined. */
+        /* TODO: Inform gcc this is uncommon case. */
+        /* TODO: print out symbol name. */
+        rvm_die("reference to undefined global");
+    }
+    return g->val;
+}
 
 
 /* Helper functions for call instructions. */
@@ -193,8 +211,30 @@ void rvm_run(rvm_state_t *state)
 
 
         /* Call instructions. */
-        /* TODO: document these macros */
-#define CALL_FUNC VAL_CLOSURE(*VAL_REF(S.func->upvals[ARG1]))
+        /* FORMAT OF CALL INSTR:
+         *    OP (8 bits): the opcode
+         *  ARG1 (8 bits): register or upval indicating function to call
+         *  ARG2 (8 bits): first argument register
+         *  ARG3 (8 bits): number of argument registers
+         *
+         *  So if ARG2 = 3 and ARG3 = 4, the arguments are in registers 3-6
+         *  inclusive.
+         *
+         *  If OP is CALL or TAILCALL, ARG1 is an upval index. The upval does
+         *  not refer to a function to call; rather it refers to a ref cell
+         *  which refers to the function to call. Ideally, the upval should be
+         *  statically guaranteed to be a ref cell, so tag-checking it should be
+         *  unnecessary; for now, we do the check anyway. Checking that what the
+         *  ref-cell points to is a function is, however, necessary.
+         *
+         *  If OP is CALL_REG or TAILCALL_REG, ARG1 is a register, which
+         *  contains the function to be called. A type check is necessary as
+         *  usual.
+         *
+         *  CALL_FUNC gets the closure being called for CALL and TAILCALL ops.
+         *  CALL_REG_FUNC does the same for CALL_REG and TAILCALL_REG.
+         */
+#define CALL_FUNC VAL_CLOSURE(deref_global(get_global(S.func->upvals[ARG1])))
 #define CALL_REG_FUNC VAL_CLOSURE(*REG(ARG1))
 
       case RVM_OP_CALL:
@@ -247,6 +287,16 @@ void rvm_run(rvm_state_t *state)
       case RVM_OP_IFNOT:
         do_cond(&S, VAL_IS_NIL(*REG(ARG1)));
         break;
+
+      case RVM_OP_CLOSE: (void) 0;
+        rvm_arg_t which_func = ARG1;
+        rvm_upval_t nupvals = ARG2;
+        rvm_proto_t *proto = S.func->proto->local_funcs[which_func];
+        (void) nupvals, (void) proto;
+        rvm_closure_t *func = NEW_CLOSURE(nupvals);
+        func->proto = proto;
+
+        assert(0);
 
       default:
         rvm_die("unrecognized or unimplemented opcode: %d", OP);

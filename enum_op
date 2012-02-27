@@ -10,6 +10,7 @@
 MOVE
 LOAD_INT
 LOAD_UPVAL
+LOAD_GLOBAL
 
 # unconditional control flow operators
 CALL

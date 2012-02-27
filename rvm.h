@@ -23,6 +23,7 @@ typedef   int16_t   rvm_jump_offset_t;
 typedef uintptr_t   rvm_val_t;
 typedef  uint32_t   rvm_int_t;
 typedef   uint8_t   rvm_tag_t;
+typedef uintptr_t   rvm_hash_t;
 
 typedef   uint8_t   rvm_reg_t;
 typedef   uint8_t   rvm_nargs_t;
@@ -44,12 +45,14 @@ typedef   uint8_t   rvm_upval_t;
 
 
 /* Data structures. */
-typedef struct {
+typedef struct rvm_proto rvm_proto_t;
+struct rvm_proto {
     rvm_instr_t *code;
     rvm_nargs_t num_args;
     rvm_upval_t num_upvals;
     bool variadic;
-} rvm_proto_t;
+    rvm_proto_t *local_funcs[];
+};
 
 typedef struct {
     rvm_proto_t *proto;
@@ -72,16 +75,27 @@ typedef struct {
     rvm_val_t data[];
 } rvm_vec_t;
 
+/* Symbols are just interned strings. */
+typedef rvm_string_t rvm_symbol_t;
+
+typedef struct {
+    /* If this is 0/NULL, the global is undefined. */
+    rvm_val_t val;
+    /* Information on where the global came from. */
+    rvm_symbol_t *symbol;
+} rvm_global_t;
+
 typedef struct {
     rvm_tag_t tag;
     union {
-        /* NOT C99 SPEC: rvm_{closure,string,vec}_t are structs w/ flex array
-         * members. we can't embed them in a union, by spec.
+        /* NOT C99 SPEC: rvm_{closure,string,symbol,vec}_t are structs w/ flex
+         * array members. we can't embed them in a union, by spec.
          */
         rvm_closure_t closure;
         rvm_cons_t cons;
+        rvm_global_t global;
         rvm_string_t string;
-        rvm_val_t ref;
+        rvm_symbol_t symbol;
         rvm_vec_t vec;
     } data;
 } rvm_obj_t;
