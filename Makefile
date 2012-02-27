@@ -13,11 +13,19 @@ rvmi: $(addsuffix .o, $(RVMI_SOURCES))
 # Pattern rules
 %.o: %.c flags
 	@echo "  CC	$<"
+ifdef VERBOSE
 	@$(CC) $(CFLAGS) -c $< -o $@
+else
+	$(CC) $(CFLAGS) -c $< -o $@
+endif
 
 $(EXES): %:
 	@echo "  LD	$^"
-	@$(CC) $(LDFLAGS) -o $@ $^
+ifdef VERBOSE
+	@$(CCLD) $(LDFLAGS) -o $@ $^
+else
+	$(CCLD) $(LDFLAGS) -o $@ $^
+endif
 
 # Other miscellaneous rules
 .PHONY: remake
@@ -26,6 +34,7 @@ remake: clean
 
 # Used to force recompile if we change flags or makefiles.
 flags: new_flags FORCE
+	@echo "  FLAGS"
 	@{ test -f $@ && diff -q $@ $< >/dev/null; } || \
 	{ echo "Flags and makefiles changed; remaking."; cp $< $@; }
 	@rm new_flags
@@ -65,7 +74,11 @@ MAXENUMVAL=256
 
 $(ENUM_HEADERS): enum_%.h: enum_% genenum
 	@echo "  ENUM	'$@'"
+ifdef VERBOSE
 	@./genenum $(notdir $*) $(MAXENUMVAL) < $< > $@
+else
+	./genenum $(notdir $*) $(MAXENUMVAL) < $< > $@
+endif
 
 
 # Automatic dependency generation.

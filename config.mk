@@ -1,5 +1,6 @@
 # Defaults.
 CC=gcc
+CCLD=$(CC)
 CFLAGS+= -std=c99 -Wall -Wextra -Werror -pipe
 LDFLAGS+=
 
