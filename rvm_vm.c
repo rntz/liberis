@@ -43,7 +43,7 @@ void rvm_arity_error(char *x, ...)
 #define VAL_OBJ val_obj
 static inline rvm_obj_t *val_obj(rvm_val_t v)
 {
-    if (!IS_OBJ(v))
+    if (UNLIKELY(!IS_OBJ(v)))
         rvm_type_error("expected object, got int");
     assert (v);
     return (rvm_obj_t*) v;
@@ -62,7 +62,7 @@ static inline bool val_is_nil(rvm_val_t v)
 static inline rvm_obj_t *obj_check_tag(rvm_tag_t tag, rvm_obj_t *obj)
 {
     assert (obj);
-    if (obj->tag != tag)
+    if (UNLIKELY(obj->tag != tag))
         rvm_type_error("expected %d, got %d", tag, obj->tag);
     return obj;
 }
@@ -86,7 +86,7 @@ static inline rvm_global_t *get_global(rvm_val_t v)
 
 static inline rvm_val_t deref_global(rvm_global_t *g)
 {
-    if (!g->val) {
+    if (UNLIKELY(!g->val)) {
         /* Global is undefined. */
         /* TODO: Inform gcc this is uncommon case. */
         /* TODO: print out symbol name. */
@@ -102,9 +102,10 @@ static inline
 void do_precall(rvm_state_t *S, rvm_closure_t *func,
                 rvm_reg_t offset, rvm_nargs_t nargs)
 {
-    if (nargs == func->proto->num_args) return;
-    /* TODO: give gcc hint indicating this is unlikely. */
-    if (func->proto->variadic) {
+    if (LIKELY(nargs == func->proto->num_args))
+        return;
+
+    if (LIKELY(func->proto->variadic)) {
         rvm_die("variadic function calls unimplemented");
     }
     else {
@@ -308,7 +309,7 @@ void rvm_run(rvm_state_t *state)
         assert(0);
 
       default:
-        /* TODO: tell gcc this is unreachable. */
+        UNREACHABLE;
         rvm_die("unrecognized or unimplemented opcode: %d", OP);
     }
 
