@@ -1,9 +1,9 @@
-.PHONY: all
+.PHONY: all FORCE
 all:
+FORCE:
 
 include config.mk
 
-# Real targets
 EXES=rvmi
 all: $(EXES)
 
@@ -11,11 +11,31 @@ RVMI_SOURCES=rvmi rvm_vm rvm_runtime
 rvmi: $(addsuffix .o, $(RVMI_SOURCES))
 
 # Pattern rules
-%.o: %.c Makefile config.mk
+%.o: %.c flags
+	@echo "  CC	$<"
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(EXES): %:
+	@echo "  LD	$^"
 	$(CC) $(LDFLAGS) -o $@ $^
+
+# Other miscellaneous rules
+.PHONY: remake
+remake: clean
+	make all
+
+# Used to force recompile if we change flags or makefiles.
+flags: new_flags FORCE
+	@{ test -f $@ && diff -q $@ $< >/dev/null; } || \
+	{ echo "Flags and makefiles changed; remaking."; cp $< $@; }
+	@rm new_flags
+
+new_flags:
+	@echo CC="$(CC)" > $@
+	@echo CFLAGS="$(CFLAGS)" >> $@
+	@echo LDFLAGS="$(LDFLAGS)" >> $@
+	@echo ENUM_HEADERS="$(ENUM_HEADERS)" >> $@
+	@md5sum Makefile config.mk >> $@
 
 
 # Cleaning stuff.
@@ -25,10 +45,10 @@ depclean:
 	./depclean
 
 clean:
-	rm -f $(EXES) *.o
+	rm -f $(EXES) $(ENUM_HEADERS) *.o
 
 pristine: clean depclean
-	rm -f $(ENUM_HEADERS)
+	rm -f flags new_flags
 
 
 # Enum header file autogeneration.
@@ -40,9 +60,11 @@ all: headers
 .PHONY: headers
 headers: $(ENUM_HEADERS)
 
-MAXENUMVAL=256			#default.
+# default, assumes enumerations are 8-bit.
+MAXENUMVAL=256
 
 $(ENUM_HEADERS): enum_%.h: enum_% genenum
+	@echo "  ENUM	'$@'"
 	./genenum $(notdir $*) $(MAXENUMVAL) < $< > $@
 
 
@@ -52,8 +74,10 @@ $(ENUM_HEADERS): enum_%.h: enum_% genenum
 # Empty dep files indicate a deleted source file; we should get rid of them.
 $(shell find . -name '*.dep' -empty -print0 | xargs -0 rm -f)
 
-%.dep: %.c $(ENUM_HEADERS)
-	set -e; $(CC) -MM -MT $< $(filter-out -pedantic,$(CFLAGS)) $< | sed 's,\($*\)\.c *:,\1.o $@ :,' > $@
+%.dep: %.c $(ENUM_HEADERS) flags
+	@echo "  DEP	$<"
+	set -e; $(CC) -MM -MT $< $(filter-out -pedantic,$(CFLAGS)) $< |\
+	sed 's,\($*\)\.c *:,\1.o $@ :,' > $@
 
 CFILES=$(shell find . -name '*.c')
 
