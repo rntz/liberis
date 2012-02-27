@@ -170,8 +170,7 @@ void do_cond(rvm_state_t *S, bool cond)
 void rvm_run(rvm_state_t *state)
 {
     rvm_state_t S = *state;
-#define REG(n)      (S.regs + (n))
-#define REGVAL(n)   (*REG(n))
+#define REG(n)      (S.regs[n])
 
     /* The ((void) 0)s that you see in the following code are garbage to appease
      * the C99 spec, which allows only that a _statement_, not a _declaration_,
@@ -194,24 +193,24 @@ void rvm_run(rvm_state_t *state)
     /* TODO: order cases by frequency. */
     switch (OP) {
       case RVM_OP_MOVE:
-        *DEST = *REG(ARG2);
+        DEST = REG(ARG2);
         ++S.pc;
         break;
 
       case RVM_OP_LOAD_INT:
         /* Tag the integer appropriately. */
         /* TODO: factor out into macros. */
-        *DEST = ((rvm_val_t)LONGARG2 << 1) | 1;
+        DEST = ((rvm_val_t)LONGARG2 << 1) | 1;
         ++S.pc;
         break;
 
       case RVM_OP_LOAD_UPVAL:
-        *DEST = UPVAL(ARG2);
+        DEST = UPVAL(ARG2);
         ++S.pc;
         break;
 
       case RVM_OP_LOAD_GLOBAL:
-        *DEST = GLOBAL(ARG2);
+        DEST = GLOBAL(ARG2);
         ++S.pc;
         break;
 
@@ -241,7 +240,7 @@ void rvm_run(rvm_state_t *state)
          *  CALL_REG_FUNC does the same for CALL_REG and TAILCALL_REG.
          */
 #define CALL_FUNC VAL_CLOSURE(GLOBAL(ARG1))
-#define CALL_REG_FUNC VAL_CLOSURE(*REG(ARG1))
+#define CALL_REG_FUNC VAL_CLOSURE(REG(ARG1))
 
       case RVM_OP_CALL:
         do_call(&S, CALL_FUNC, ARG2, ARG3);
@@ -276,7 +275,7 @@ void rvm_run(rvm_state_t *state)
 
       case RVM_OP_RETURN: (void) 0;
         /* Put the return value where it ought to be. */
-        *REG(0) = *REG(ARG1);
+        REG(0) = REG(ARG1);
         rvm_frame_t *frame = S.frames--;
         /* We determine how far to pop the stack by looking at the argument
          * offset given in the CALL instruction that set up our frame.
@@ -287,11 +286,11 @@ void rvm_run(rvm_state_t *state)
         break;
 
       case RVM_OP_IF:
-        do_cond(&S, !VAL_IS_NIL(*REG(ARG1)));
+        do_cond(&S, !VAL_IS_NIL(REG(ARG1)));
         break;
 
       case RVM_OP_IFNOT:
-        do_cond(&S, VAL_IS_NIL(*REG(ARG1)));
+        do_cond(&S, VAL_IS_NIL(REG(ARG1)));
         break;
 
       case RVM_OP_CLOSE: (void) 0;
