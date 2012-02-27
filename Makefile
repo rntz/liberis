@@ -13,11 +13,11 @@ rvmi: $(addsuffix .o, $(RVMI_SOURCES))
 # Pattern rules
 %.o: %.c flags
 	@echo "  CC	$<"
-	$(CC) $(CFLAGS) -c $< -o $@
+	@$(CC) $(CFLAGS) -c $< -o $@
 
 $(EXES): %:
 	@echo "  LD	$^"
-	$(CC) $(LDFLAGS) -o $@ $^
+	@$(CC) $(LDFLAGS) -o $@ $^
 
 # Other miscellaneous rules
 .PHONY: remake
@@ -65,7 +65,7 @@ MAXENUMVAL=256
 
 $(ENUM_HEADERS): enum_%.h: enum_% genenum
 	@echo "  ENUM	'$@'"
-	./genenum $(notdir $*) $(MAXENUMVAL) < $< > $@
+	@./genenum $(notdir $*) $(MAXENUMVAL) < $< > $@
 
 
 # Automatic dependency generation.
@@ -76,7 +76,7 @@ $(shell find . -name '*.dep' -empty -print0 | xargs -0 rm -f)
 
 %.dep: %.c flags $(ENUM_HEADERS)
 	@echo "  DEP	$<"
-	set -e; $(CC) -MM -MT $< $(filter-out -pedantic,$(CFLAGS)) $< |\
+	@set -e; $(CC) -MM -MT $< $(filter-out -pedantic,$(CFLAGS)) $< |\
 	sed 's,\($*\)\.c *:,\1.o $@ :,' > $@
 
 CFILES=$(shell find . -name '*.c')
