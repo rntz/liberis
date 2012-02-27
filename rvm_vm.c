@@ -88,7 +88,6 @@ static inline rvm_val_t deref_global(rvm_global_t *g)
 {
     if (UNLIKELY(!g->val)) {
         /* Global is undefined. */
-        /* TODO: Inform gcc this is uncommon case. */
         /* TODO: print out symbol name. */
         rvm_die("reference to undefined global");
     }
@@ -109,8 +108,6 @@ void do_precall(rvm_state_t *S, rvm_closure_t *func,
         rvm_die("variadic function calls unimplemented");
     }
     else {
-        /* SLOWER PATH. */
-        /* TODO: give gcc hint indicating this is unlikely. */
         rvm_arity_error("arity mismatch");
     }
     (void) S; (void) offset;    /* unused */
