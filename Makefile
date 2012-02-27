@@ -46,6 +46,17 @@ new_flags:
 	@echo ENUM_HEADERS="$(ENUM_HEADERS)" >> $@
 	@md5sum Makefile config.mk >> $@
 
+# Disassembly targets.
+ifeq (rvmi.s, $(MAKECMDGOALS))
+CFLAGS+= -g
+endif
+
+rvmi.s: rvmi
+	objdump -M intel -S -d $< > $@
+
+rvmi.rodata: rvmi
+	objdump --full-contents -j .rodata $< > $@
+
 
 # Cleaning stuff.
 .PHONY: depclean clean pristine
@@ -57,7 +68,7 @@ clean:
 	rm -f $(EXES) $(ENUM_HEADERS) *.o
 
 pristine: clean depclean
-	rm -f flags new_flags
+	rm -f flags new_flags rvmi.s rvmi.rodata
 
 
 # Enum header file autogeneration.
