@@ -308,6 +308,7 @@ void rvm_run(rvm_state_t *state)
         assert(0);
 
       default:
+        /* TODO: tell gcc this is unreachable. */
         rvm_die("unrecognized or unimplemented opcode: %d", OP);
     }
 
