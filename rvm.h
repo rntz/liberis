@@ -54,6 +54,7 @@ struct rvm_proto {
     rvm_proto_t *local_funcs[];
 };
 
+/* Types after this point should only exist embedded inside of an rvm_obj_t. */
 typedef struct {
     rvm_proto_t *proto;
     rvm_val_t upvals[];
@@ -100,6 +101,8 @@ typedef struct {
     } data;
 } rvm_obj_t;
 
+
+/* Data types below this line are not embedded inside an rvm_obj_t. */
 typedef struct {
     rvm_instr_t *pc;
     rvm_closure_t *func;
