@@ -190,6 +190,9 @@ void rvm_run(rvm_state_t *state)
 #define LONGARG2 RVMI_LONGARG2(instr)
 #define DEST REG(ARG1)
 
+#define UPVAL(upval) (S.func->upvals[(upval)])
+#define GLOBAL(upval) (deref_global(get_global(UPVAL(upval))))
+
     /* TODO: order cases by frequency. */
     switch (OP) {
       case RVM_OP_MOVE:
@@ -205,7 +208,12 @@ void rvm_run(rvm_state_t *state)
         break;
 
       case RVM_OP_LOAD_UPVAL:
-        *DEST = S.func->upvals[ARG2];
+        *DEST = UPVAL(ARG2);
+        ++S.pc;
+        break;
+
+      case RVM_OP_LOAD_GLOBAL:
+        *DEST = GLOBAL(ARG2);
         ++S.pc;
         break;
 
@@ -234,7 +242,7 @@ void rvm_run(rvm_state_t *state)
          *  CALL_FUNC gets the closure being called for CALL and TAILCALL ops.
          *  CALL_REG_FUNC does the same for CALL_REG and TAILCALL_REG.
          */
-#define CALL_FUNC VAL_CLOSURE(deref_global(get_global(S.func->upvals[ARG1])))
+#define CALL_FUNC VAL_CLOSURE(GLOBAL(ARG1))
 #define CALL_REG_FUNC VAL_CLOSURE(*REG(ARG1))
 
       case RVM_OP_CALL:
@@ -292,9 +300,10 @@ void rvm_run(rvm_state_t *state)
         rvm_arg_t which_func = ARG1;
         rvm_upval_t nupvals = ARG2;
         rvm_proto_t *proto = S.func->proto->local_funcs[which_func];
-        (void) nupvals, (void) proto;
         rvm_closure_t *func = NEW_CLOSURE(nupvals);
         func->proto = proto;
+
+        /* TODO: load upvals into func. */
 
         assert(0);
 
