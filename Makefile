@@ -56,8 +56,8 @@ ENUM_ROOTS=tag op
 ENUM_INPUTS=$(addprefix enum_, $(ENUM_ROOTS))
 ENUM_HEADERS=$(addsuffix .h, $(ENUM_INPUTS))
 
-all: headers
 .PHONY: headers
+all: headers
 headers: $(ENUM_HEADERS)
 
 # default, assumes enumerations are 8-bit.
@@ -74,7 +74,7 @@ $(ENUM_HEADERS): enum_%.h: enum_% genenum
 # Empty dep files indicate a deleted source file; we should get rid of them.
 $(shell find . -name '*.dep' -empty -print0 | xargs -0 rm -f)
 
-%.dep: %.c $(ENUM_HEADERS) flags
+%.dep: %.c flags
 	@echo "  DEP	$<"
 	set -e; $(CC) -MM -MT $< $(filter-out -pedantic,$(CFLAGS)) $< |\
 	sed 's,\($*\)\.c *:,\1.o $@ :,' > $@
