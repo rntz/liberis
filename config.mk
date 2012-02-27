@@ -5,7 +5,7 @@ CFLAGS+= -std=c99 -Wall -Wextra -Werror -pipe
 LDFLAGS+=
 
 CFLAGS_DEBUG= -O0 -ggdb3
-CFLAGS_RELEASE= -O3 -fomit-frame-pointer -DNDEBUG
+CFLAGS_RELEASE= -O3 -fomit-frame-pointer -DNDEBUG -DRVM_RELEASE
 # feel free to mess around with this.
 CFLAGS_CUSTOM=
 
