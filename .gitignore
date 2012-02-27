@@ -1,4 +1,7 @@
 *.dep
-/enum_*.h
 *.o
+/enum_*.h
 /rvmi
+/rvmi.s
+/rvmi.rodata
+/flags
