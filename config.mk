@@ -1,13 +1,27 @@
 # Defaults.
 CC=gcc
-CFLAGS+= -std=c99 -Wall -Wextra -Werror
+CFLAGS+= -std=c99 -Wall -Wextra -Werror -pipe
 LDFLAGS+=
 
-# Debug build.
-CFLAGS+= -ggdb3 -O0
+CFLAGS_DEBUG= -O0 -ggdb3
+CFLAGS_RELEASE= -O3 -fomit-frame-pointer -DNDEBUG
+# feel free to mess around with this.
+CFLAGS_CUSTOM=
 
-# Release build.
-# CFLAGS+= -O3 -DNDEBUG
+# Default to debug.
+ifeq (,$(MODE))
+MODE=debug
+endif
+
+ifeq (debug,$(MODE))
+CFLAGS+= $(CFLAGS_DEBUG)
+else ifeq (release,$(MODE))
+CFLAGS+= $(CFLAGS_RELEASE)
+else ifeq (custom,$(MODE))
+CFLAGS+= $(CFLAGS_CUSTOM)
+else
+$(error "unknown build mode: $(MODE)")
+endif
 
 
 # For building with clang. Notably, don't have to change any compilation flags.
