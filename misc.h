@@ -6,6 +6,9 @@
 #define XCAT(X,Y) X##Y
 #define CAT(X,Y) XCAT(X,Y)
 
+/* Size of a member of a struct or union. */
+#define membersize(type, mem) sizeof(((type*)NULL)->mem)
+
 /* Clang defines __has_builtin, but other compilers don't. */
 #ifndef __has_builtin
 #define __has_builtin(x) 0

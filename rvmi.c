@@ -7,6 +7,7 @@
 #include "rvm.h"
 #include "rvm_runtime.h"
 #include "rvm_vm.h"
+#include "rvm_util.h"
 
 #define I1(OP, X) ((rvm_instr_t) (CAT(RVM_OP_,OP) ^ (X << 8)))
 #define I2(OP, A, B) I1(OP, A ^ (B << 8))
@@ -14,11 +15,11 @@
 
 rvm_obj_t *make_global(char *name, rvm_val_t v)
 {
-    rvm_obj_t *g = rvm_new(RVM_TAG_GLOBAL, sizeof(rvm_global_t));
-    g->data.global.val = v;
-    g->data.global.symbol = NULL; /* TODO: use `name' for this */
+    rvm_global_t *g = MAKE(global);
+    g->val = v;
+    g->symbol = NULL;             /* TODO: use `name' for this. */
     (void) name;
-    return g;
+    return CONTENTS_OBJ(g);
 }
 
 
@@ -34,14 +35,17 @@ rvm_proto_t foo_proto = {
     .variadic = false,
 };
 
-rvm_obj_t foo_object = {
-    .tag = RVM_TAG_CLOSURE,
-    .data.closure = {
+struct {
+    rvm_shape_t *tag;
+    rvm_closure_t closure;
+} foo = {
+    .tag = SHAPE_TAG(closure),
+    .closure = {
         .proto = &foo_proto,
-    },
+    }
 };
 
-rvm_obj_t *make_foo(void) { return &foo_object; }
+rvm_obj_t *make_foo(void) { return CONTENTS_OBJ(&foo.closure); }
 
 
 /* bar */
@@ -53,9 +57,7 @@ rvm_instr_t bar_code[] = {
 
 rvm_obj_t *make_bar(void)
 {
-    rvm_proto_t *proto =
-        malloc(sizeof(rvm_proto_t) + sizeof(rvm_proto_t*) * 1);
-    assert (proto);
+    rvm_proto_t *proto = MAKE_WITH(proto, local_funcs, 1);
     *proto = ((rvm_proto_t) {
             .code = bar_code,
             .num_args = 0,
@@ -63,16 +65,14 @@ rvm_obj_t *make_bar(void)
             .variadic = false });
 
     rvm_obj_t *foo = make_foo();
-    proto->local_funcs[0] = foo->data.closure.proto;
+    proto->local_funcs[0] = OBJ_CLOSURE(foo)->proto;
 
-    rvm_obj_t *gfoo = make_global("foo", (rvm_val_t) foo);
+    rvm_obj_t *gfoo = make_global("foo", OBJ_VAL(foo));
 
-    rvm_obj_t *bar = rvm_new(RVM_TAG_CLOSURE,
-                             sizeof(rvm_closure_t) +
-                             sizeof(rvm_val_t) * 1);
-    bar->data.closure.proto = proto;
-    bar->data.closure.upvals[0] = (rvm_val_t) gfoo;
-    return bar;
+    rvm_closure_t *bar = MAKE_CLOSURE(1);
+    bar->proto = proto;
+    bar->upvals[0] = OBJ_VAL(gfoo);
+    return CONTENTS_OBJ(bar);
 }
 
 
@@ -97,7 +97,7 @@ int main(int argc, char **argv)
             .pc = bar_code,
             .regs = stack,
             .frames = cont,
-            .func = &bar->data.closure
+            .func = OBJ_CLOSURE(bar)
     });
 
     rvm_run(&state);

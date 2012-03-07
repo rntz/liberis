@@ -21,13 +21,24 @@ void rvm_die(const char *fmt, ...)
     va_end(ap);                 /* unreachable */
 }
 
-rvm_obj_t *rvm_new(rvm_tag_t tag, size_t objsize)
+void rvm_type_error(char *x, ...)
 {
-    const size_t size = offsetof(rvm_obj_t, data) + objsize;
-    assert (size >= sizeof(rvm_tag_t));
+    rvm_die("type error");
+    (void) x;
+}
+
+void rvm_arity_error(char *x, ...)
+{
+    rvm_die("arity error");
+    (void) x;
+}
+
+rvm_obj_t *rvm_new(rvm_shape_t *tag, size_t size)
+{
+    assert (size >= sizeof(rvm_obj_t)); /* sanity/precondition */
     rvm_obj_t *obj = malloc(size);
     if (!obj)
-        rvm_die("OOM allocating object with tag %d", tag);
+        rvm_die("OOM allocating object with tag %p", tag);
     assert (obj);
     obj->tag = tag;
     return obj;

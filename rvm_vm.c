@@ -1,98 +1,11 @@
 #include <assert.h>
 #include <string.h>
 
-#include "rvm.h"
-#include "rvm_vm.h"
-#include "rvm_runtime.h"
 #include "misc.h"
-
-void rvm_type_error(char *x, ...)
-{
-    rvm_die("type error");
-    (void) x;
-}
-
-void rvm_arity_error(char *x, ...)
-{
-    rvm_die("arity error");
-    (void) x;
-}
-
-
-/* Type converters and other conveniences. */
-#define TAG(tagname) CAT(RVM_TAG_,tagname)
-
-/* Mallocers. */
-#define membersize(type, mem) sizeof(((type*)NULL)->mem)
-
-#define NEW_PLUS(tag, mem, extra)                                       \
-    (&rvm_new(TAG(tag), membersize(rvm_obj_t, data.mem) + (extra))->data.mem)
-
-#define NEW(tag, mem) NEW_PLUS(tag, mem, 0)
-
-#define NEW_WITH(tag, mem, elem_mem, nelems)                            \
-    NEW_PLUS(tag, mem, nelems * membersize(rvm_obj_t, data.mem.elem_mem[0]))
-
-#define NEW_CLOSURE(nupvals) NEW_WITH(CLOSURE, closure, upvals, nupvals)
-
-#define IS_INT(x) (x & 1)
-#define IS_OBJ(x) (!IS_INT(x))
-
-#define OBJ_VAL(obj) ((rvm_val_t) (obj))
-
-#define VAL_OBJ val_obj
-static inline rvm_obj_t *val_obj(rvm_val_t v)
-{
-    if (UNLIKELY(!IS_OBJ(v)))
-        rvm_type_error("expected object, got int");
-    assert (v);
-    return (rvm_obj_t*) v;
-}
-
-#define OBJ_ISA(tagname, obj) ((obj)->tag == TAG(tagname))
-#define OBJ_IS_NIL(obj) OBJ_ISA(NIL, obj)
-
-#define VAL_IS_NIL val_is_nil
-static inline bool val_is_nil(rvm_val_t v)
-{
-    return IS_OBJ(v) && OBJ_IS_NIL((rvm_obj_t*)v);
-}
-
-#define OBJ_CHECK_TAG(tag, obj) obj_check_tag(CAT(RVM_TAG_, tag), (obj))
-static inline rvm_obj_t *obj_check_tag(rvm_tag_t tag, rvm_obj_t *obj)
-{
-    assert (obj);
-    if (UNLIKELY(obj->tag != tag))
-        rvm_type_error("expected %d, got %d", tag, obj->tag);
-    return obj;
-}
-
-#define OBJ_AS(tagname, member, obj) (&OBJ_CHECK_TAG(tagname, obj)->data.member)
-#define VAL_AS(tagname, member, value) OBJ_AS(tagname, member, VAL_OBJ(value))
-
-#define VAL_CLOSURE(v) VAL_AS(CLOSURE, closure, v)
-#define VAL_CONS(v) VAL_AS(CONS, cons, v)
-#define VAL_STRING(v) VAL_AS(STRING, string, v)
-
-/* This is to be used only in cases where we statically know that v is a "global
- * cell". TODO: explain global cells somwhere in docs & reference here. */
-static inline rvm_global_t *get_global(rvm_val_t v)
-{
-    assert (IS_OBJ(v));
-    rvm_obj_t *obj = (rvm_obj_t*) v;
-    assert (OBJ_ISA(GLOBAL, obj));
-    return &obj->data.global;
-}
-
-static inline rvm_val_t deref_global(rvm_global_t *g)
-{
-    if (UNLIKELY(!g->val)) {
-        /* Global is undefined. */
-        /* TODO: print out symbol name. */
-        rvm_die("reference to undefined global");
-    }
-    return g->val;
-}
+#include "rvm.h"
+#include "rvm_runtime.h"
+#include "rvm_util.h"
+#include "rvm_vm.h"
 
 
 /* Helper functions for call instructions. */
@@ -297,7 +210,7 @@ void rvm_run(rvm_state_t *state)
         rvm_arg_t which_func = ARG1;
         rvm_upval_t nupvals = ARG2;
         rvm_proto_t *proto = S.func->proto->local_funcs[which_func];
-        rvm_closure_t *func = NEW_CLOSURE(nupvals);
+        rvm_closure_t *func = MAKE_CLOSURE(nupvals);
         func->proto = proto;
 
         /* TODO: load upvals into func. */

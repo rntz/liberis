@@ -45,8 +45,27 @@ typedef   uint8_t   rvm_upval_t;
 
 
 /* Data structures. */
-typedef struct rvm_proto rvm_proto_t;
-struct rvm_proto {
+typedef struct {
+    const char *name;           /* a C string, null-byte and all. */
+    /* TODO: gc information. */
+} rvm_shape_t;
+
+/* An object is a pointer to its shape, followed by a value of that shape. */
+typedef struct {
+    rvm_shape_t *tag;
+    /* The value goes here. */
+} rvm_obj_t;
+
+/* For declaring shapes. */
+#define SHAPE(name) \
+    extern rvm_shape_t rvm_shape_##name;                \
+    typedef struct rvm_##name##_t rvm_##name##_t;       \
+    struct rvm_##name##_t
+
+/* Types after this point should only exist embedded inside of an rvm_obj_t. */
+extern rvm_shape_t rvm_shape_nil;
+
+SHAPE(proto) {
     rvm_instr_t *code;
     rvm_nargs_t num_args;
     rvm_upval_t num_upvals;
@@ -54,52 +73,40 @@ struct rvm_proto {
     rvm_proto_t *local_funcs[];
 };
 
-/* Types after this point should only exist embedded inside of an rvm_obj_t. */
-typedef struct {
+SHAPE(closure) {
     rvm_proto_t *proto;
     rvm_val_t upvals[];
-} rvm_closure_t;
+};
 
 /* TODO: decide re unicode & encoding stuff. */
-typedef struct {
+SHAPE(string) {
     size_t len;
     const char data[];
-} rvm_string_t;
+};
 
-typedef struct {
+SHAPE(cons) {
     rvm_val_t car;
     rvm_val_t cdr;
-} rvm_cons_t;
+};
 
-typedef struct {
+SHAPE(vec) {
     size_t len;
     rvm_val_t data[];
-} rvm_vec_t;
+};
 
 /* Symbols are just interned strings. */
+extern rvm_shape_t rvm_shape_symbol;
 typedef rvm_string_t rvm_symbol_t;
 
-typedef struct {
+SHAPE(global) {
     /* If this is 0/NULL, the global is undefined. */
     rvm_val_t val;
     /* Information on where the global came from. */
     rvm_symbol_t *symbol;
-} rvm_global_t;
+};
 
-typedef struct {
-    rvm_tag_t tag;
-    union {
-        /* NOT C99 SPEC: rvm_{closure,string,symbol,vec}_t are structs w/ flex
-         * array members. we can't embed them in a union, by spec.
-         */
-        rvm_closure_t closure;
-        rvm_cons_t cons;
-        rvm_global_t global;
-        rvm_string_t string;
-        rvm_symbol_t symbol;
-        rvm_vec_t vec;
-    } data;
-} rvm_obj_t;
+/* clean up our macros */
+#undef SHAPE
 
 
 /* Data types below this line are not embedded inside an rvm_obj_t. */
