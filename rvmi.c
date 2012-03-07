@@ -9,9 +9,9 @@
 #include "rvm_vm.h"
 #include "rvm_util.h"
 
-#define I1(OP, X) ((rvm_instr_t) (CAT(RVM_OP_,OP) ^ (X << 8)))
-#define I2(OP, A, B) I1(OP, A ^ (B << 8))
-#define I3(OP, A, B, C) I2(OP, A, B ^ (C << 8))
+#define I1(OP, X) ((rvm_instr_t) (CAT(RVM_OP_,OP) ^ ((X) << 8)))
+#define I2(OP, A, B) I1(OP, (A) ^ ((B) << 8))
+#define I3(OP, A, B, C) I2(OP, A, (B) ^ ((C) << 8))
 
 rvm_obj_t *make_global(char *name, rvm_val_t v)
 {
