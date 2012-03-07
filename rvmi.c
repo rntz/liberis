@@ -51,8 +51,8 @@ rvm_obj_t *make_foo(void) { return CONTENTS_OBJ(&foo.closure); }
 /* bar */
 rvm_instr_t bar_code[] = {
     I2(LOAD_INT, 1, 0xfeed),
-    I3(CALL, 0, 0, 1),
-    I1(RETURN, 0)
+    I3(CALL, 0, 1, 1),
+    I1(RETURN, 1)
 };
 
 rvm_obj_t *make_bar(void)
