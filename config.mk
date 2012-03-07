@@ -26,6 +26,8 @@ endif
 
 
 # For building with clang. Notably, don't have to change any compilation flags.
+# NB. Compiling with clang gives nicer compilation error messages, but forfeits
+# the ability to use macros from gdb.
 CC=clang
 
 
