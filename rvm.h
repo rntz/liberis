@@ -31,7 +31,6 @@ typedef   uint8_t   rvm_upval_t;
 
 /* Generated tables. */
 #include "enum_op.h"
-#include "enum_tag.h"
 
 /* The magic constants used here are obvious, but will change if instruction
  * encoding scheme changes. */

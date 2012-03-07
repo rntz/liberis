@@ -72,7 +72,7 @@ pristine: clean depclean
 
 
 # Enum header file autogeneration.
-ENUM_ROOTS=tag op
+ENUM_ROOTS=op
 ENUM_INPUTS=$(addprefix enum_, $(ENUM_ROOTS))
 ENUM_HEADERS=$(addsuffix .h, $(ENUM_INPUTS))
 
