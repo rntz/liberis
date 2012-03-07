@@ -12,13 +12,9 @@
 
 * General notes
 
-Rips off Lua pretty heavily.
-
-Register machine. Each function indicates how many registers it needs.
-
-Arguments passed on stack? In regs?
-
-Three op form or two op as necessary for space constraints. Figure out later.
+Rips off Lua pretty heavily. Register machine, each function indicates how many
+registers it needs, registers implicitly on a stack, calling function shifts
+register window
 
 * Upvals & closures
 
@@ -50,6 +46,11 @@ So the compiler should only put variables on the heap if they are both (a)
 shared between a parent and any of its transitive child functions and (b)
 mutated by one of these functions. This is a pretty simple analysis to do, and a
 relatively uncommon case in practice.
+
+In fact, there is a name for this analysis/optimization: it is called
+"assignment conversion", and (unsurprisingly) appears to have originated in the
+design of optimizing scheme compilers. See "ORBIT: An optimizing compiler for
+scheme", David Andrew Krantz, 1988.
 
 * Constants
 
@@ -127,7 +128,6 @@ Options:
    cons:
    + slooooow (esp if you don't cache small ints)
 
-
 * Instruction encoding notes
 
 ** Comparisons
@@ -168,3 +168,25 @@ interpreter) and (b) in 2 bits, so the whole thing can fit in a byte.
 If we want our comparison ops to also support floating-point operands with IEEE
 semantics, the story gets even more complicated. I'm not worrying about that for
 now.
+
+* A library or a part of the runtime?
+
+Do I want to implement eris using rvm as a library or in tandem with rvm?
+
+Ideally as a library. What would I have to do for this to be feasible?
+
+- Eris will have its own data structures (eg. modules) unfamiliar to rvm. How
+  can we handle these?
+
+  Extra "usertag" field (nb. won't increase size of obj_t)? Tags above a certain
+  value have user-defined interpretation? How do we let user code access that
+  (see next point)?
+
+- If it's a library, we hope for it to have some measure of API stability. How
+  can we hide our internals enough to have a reasonably stable API while still
+  exposing enough for a language to use us as a target?
+
+** C interface
+
+Even if rvm not implemented as library, still want languages built on top of it
+to (be able to) have a reasonable C FFI.
