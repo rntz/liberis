@@ -39,8 +39,8 @@ void do_call(rvm_state_t *S, rvm_closure_t *func,
 
     /* Jump into the function. */
     S->func = func;
-    S->regs += offset;
     S->pc = S->func->proto->code;
+    S->regs += offset;
 }
 
 static inline
