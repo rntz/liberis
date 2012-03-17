@@ -57,20 +57,20 @@ static inline rvm_obj_t *obj_check_tag(rvm_shape_t *tag, rvm_obj_t *obj)
 #define VAL_STRING(v) VAL_TO(string, v)
 
 
-/* This is to be used only in cases where we statically know that v is a "global
- * cell". TODO: explain global cells somewhere in docs & reference here. */
-static inline rvm_global_t *get_global(rvm_val_t v)
+/* This is to be used only in cases where we statically know that v is a "cell".
+ * TODO: explain cells somewhere in docs & reference here. */
+static inline rvm_cell_t *get_cell(rvm_val_t v)
 {
     assert (IS_OBJ(v));
-    return OBJ_TO(global, (rvm_obj_t*) v);
+    return OBJ_TO(cell, (rvm_obj_t*) v);
 }
 
-static inline rvm_val_t deref_global(rvm_global_t *g)
+static inline rvm_val_t deref_cell(rvm_cell_t *g)
 {
     if (UNLIKELY(!g->val)) {
-        /* Global is undefined. */
+        /* Cell is undefined. */
         /* TODO: print out symbol name. */
-        rvm_die("reference to undefined global");
+        rvm_die("reference to undefined cell");
     }
     return g->val;
 }

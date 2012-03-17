@@ -13,9 +13,9 @@
 #define I2(OP, A, B) I1(OP, (A) ^ ((B) << 8))
 #define I3(OP, A, B, C) I2(OP, A, (B) ^ ((C) << 8))
 
-rvm_obj_t *make_global(char *name, rvm_val_t v)
+rvm_obj_t *make_cell(char *name, rvm_val_t v)
 {
-    rvm_global_t *g = MAKE(global);
+    rvm_cell_t *g = MAKE(cell);
     g->val = v;
     g->symbol = NULL;             /* TODO: use `name' for this. */
     (void) name;
@@ -51,7 +51,7 @@ rvm_obj_t *make_foo(void) { return CONTENTS_OBJ(&foo.closure); }
 /* bar */
 rvm_instr_t bar_code[] = {
     I2(LOAD_INT, 1, 0xfeed),
-    I3(CALL, 0, 1, 1),
+    I3(CALL_CELL, 0, 1, 1),
     I1(RETURN, 1)
 };
 
@@ -67,7 +67,7 @@ rvm_obj_t *make_bar(void)
     rvm_obj_t *foo = make_foo();
     proto->local_funcs[0] = OBJ_CLOSURE(foo)->proto;
 
-    rvm_obj_t *gfoo = make_global("foo", OBJ_VAL(foo));
+    rvm_obj_t *gfoo = make_cell("foo", OBJ_VAL(foo));
 
     rvm_closure_t *bar = MAKE_CLOSURE(1);
     bar->proto = proto;

@@ -12,4 +12,4 @@ SHAPE(string);
 SHAPE(cons);
 SHAPE(vec);
 SHAPE(symbol);
-SHAPE(global);
+SHAPE(cell);

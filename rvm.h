@@ -97,10 +97,10 @@ SHAPE(vec) {
 extern rvm_shape_t rvm_shape_symbol;
 typedef rvm_string_t rvm_symbol_t;
 
-SHAPE(global) {
-    /* If this is 0/NULL, the global is undefined. */
+SHAPE(cell) {
+    /* If this is 0/NULL, the cell is undefined. */
     rvm_val_t val;
-    /* Information on where the global came from. */
+    /* Information on where the cell came from. */
     rvm_symbol_t *symbol;
 };
 

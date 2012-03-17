@@ -101,7 +101,7 @@ void rvm_run(rvm_state_t *state)
 #define DEST REG(ARG1)
 
 #define UPVAL(upval) (S.func->upvals[(upval)])
-#define GLOBAL(upval) (deref_global(get_global(UPVAL(upval))))
+#define CELL(upval) (deref_cell(get_cell(UPVAL(upval))))
 
     /* TODO: order cases by frequency. */
     switch (OP) {
@@ -122,8 +122,8 @@ void rvm_run(rvm_state_t *state)
         ++S.pc;
         break;
 
-      case RVM_OP_LOAD_GLOBAL:
-        DEST = GLOBAL(ARG2);
+      case RVM_OP_LOAD_CELL:
+        DEST = CELL(ARG2);
         ++S.pc;
         break;
 
@@ -152,23 +152,23 @@ void rvm_run(rvm_state_t *state)
          *  CALL_FUNC gets the closure being called for CALL and TAILCALL ops.
          *  CALL_REG_FUNC does the same for CALL_REG and TAILCALL_REG.
          */
-#define CALL_FUNC VAL_CLOSURE(GLOBAL(ARG1))
-#define CALL_REG_FUNC VAL_CLOSURE(REG(ARG1))
+#define CELL_FUNC VAL_CLOSURE(CELL(ARG1))
+#define REG_FUNC VAL_CLOSURE(REG(ARG1))
 
-      case RVM_OP_CALL:
-        do_call(&S, CALL_FUNC, ARG2, ARG3);
+      case RVM_OP_CALL_CELL:
+        do_call(&S, CELL_FUNC, ARG2, ARG3);
         break;
 
       case RVM_OP_CALL_REG:
-        do_call(&S, CALL_REG_FUNC, ARG2, ARG3);
+        do_call(&S, REG_FUNC, ARG2, ARG3);
         break;
 
-      case RVM_OP_TAILCALL:
-        do_tailcall(&S, CALL_FUNC, ARG2, ARG3);
+      case RVM_OP_TAILCALL_CELL:
+        do_tailcall(&S, CELL_FUNC, ARG2, ARG3);
         break;
 
       case RVM_OP_TAILCALL_REG:
-        do_tailcall(&S, CALL_REG_FUNC, ARG2, ARG3);
+        do_tailcall(&S, REG_FUNC, ARG2, ARG3);
         break;
 
 
