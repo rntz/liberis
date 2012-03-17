@@ -72,20 +72,18 @@ new_flags:
 
 
 # Cleaning stuff.
-CLEAN_RULES=nodeps clean fullclean pristine
+CLEAN_RULES=nodeps clean pristine
 .PHONY: $(CLEAN_RULES)
 
 nodeps:
 	./depclean
 
 clean:
-	rm -f $(EXES) *.o rvm.tar.* rvmi.s rvmi.rodata
+	find . -name '*.o' -delete
+	rm -f $(EXES) rvm.tar.* rvmi.s rvmi.rodata
 
-fullclean: clean
-	rm -f $(ENUM_HEADERS)
-
-pristine: fullclean nodeps
-	rm -f flags new_flags
+pristine: clean nodeps
+	rm -f flags new_flags $(ENUM_HEADERS)
 
 
 # Enum header file autogeneration.
