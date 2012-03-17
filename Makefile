@@ -46,11 +46,15 @@ $(EXES): %:
 
 %.tar.gz:
 	@echo "   TAR	$@"
-	tar czf $@ $^
+	ln -sf ./ $*
+	tar czf $@ $(addprefix $*/,$^)
+	rm $*
 
 %.tar.bz2:
 	@echo "   TAR	$@"
-	tar cjf $@ $^
+	ln -sf ./ $*
+	tar cjf $@ $(addprefix $*/,$^)
+	rm $*
 
 
 # Used to force recompile if we change flags or makefiles.
