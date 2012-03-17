@@ -178,9 +178,8 @@ Ideally as a library. What would I have to do for this to be feasible?
 - Eris will have its own data structures (eg. modules) unfamiliar to rvm. How
   can we handle these?
 
-  Extra "usertag" field (nb. won't increase size of obj_t)? Tags above a certain
-  value have user-defined interpretation? How do we let user code access that
-  (see next point)?
+  Tags are just pointers to some metadata, so eris creates the appropriate
+  metadata somewhere and uses that as a tag.
 
 - If it's a library, we hope for it to have some measure of API stability. How
   can we hide our internals enough to have a reasonably stable API while still
