@@ -1,0 +1,9 @@
+# What the hell is this thing?
+
+Move along. Nothing to see here.
+
+# Dependencies
+
+- libslz.a >= 0.0.0
+
+Currently we do exactly zero checking that these dependencies are fulfilled.
