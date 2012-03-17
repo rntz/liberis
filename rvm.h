@@ -56,10 +56,10 @@ typedef struct {
 } rvm_obj_t;
 
 /* For declaring shapes. */
-#define SHAPE(name) \
+#define SHAPE(name)                                     \
     extern rvm_shape_t rvm_shape_##name;                \
-    typedef struct rvm_##name##_t rvm_##name##_t;       \
-    struct rvm_##name##_t
+    typedef struct rvm_##name rvm_##name##_t;           \
+    struct rvm_##name
 
 /* Types after this point should only exist embedded inside of an rvm_obj_t. */
 extern rvm_shape_t rvm_shape_nil;
