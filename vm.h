@@ -21,6 +21,6 @@
 #define VM_LONGARG2(instr)    ((longarg_t)((instr) >> 16))
 
 /* Interface to the vm. */
-void eris_run(eris_state_t *state);
+void eris_vm_run(vm_state_t *state);
 
 #endif

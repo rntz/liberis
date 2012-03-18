@@ -1,10 +1,10 @@
 #ifndef _ERIS_TYPES_H_
 #define _ERIS_TYPES_H_
 
-#include <eris.h>
-
 #include <stdint.h>
 #include <stdbool.h>
+
+#include <eris.h>
 
 /* Different instructions take different numbers of bytes to represent. However,
  * it behooves us to divide the instruction stream into fixed-size chunks such
@@ -103,12 +103,11 @@ typedef struct {
     closure_t *func;
 } frame_t;
 
-/* corresponding typedef is in eris.h */
-struct eris_state {
+typedef struct {
     instr_t *pc;
     val_t *regs;
     frame_t *frames;        /* control/return stack */
     closure_t *func;
-};
+} vm_state_t;
 
 #endif

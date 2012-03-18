@@ -12,7 +12,7 @@
 /* Helper functions for call instructions. */
 /* Does arity checking and conses excess variadic arguments. */
 static inline
-void do_precall(eris_state_t *S, closure_t *func,
+void do_precall(vm_state_t *S, closure_t *func,
                 reg_t offset, nargs_t nargs)
 {
     if (LIKELY(nargs == func->proto->num_args))
@@ -28,7 +28,7 @@ void do_precall(eris_state_t *S, closure_t *func,
 }
 
 static inline
-void do_call(eris_state_t *S, closure_t *func,
+void do_call(vm_state_t *S, closure_t *func,
              reg_t offset, nargs_t nargs)
 {
     do_precall(S, func, offset, nargs);
@@ -45,7 +45,7 @@ void do_call(eris_state_t *S, closure_t *func,
 }
 
 static inline
-void do_tailcall(eris_state_t *S, closure_t *func,
+void do_tailcall(vm_state_t *S, closure_t *func,
                  reg_t offset, nargs_t nargs)
 {
     do_precall(S, func, offset, nargs);
@@ -58,7 +58,7 @@ void do_tailcall(eris_state_t *S, closure_t *func,
 }
 
 static inline
-void do_cond(eris_state_t *S, bool cond)
+void do_cond(vm_state_t *S, bool cond)
 {
     /* The instruction after a conditional is required to be a jump. */
     assert (VM_OP(S->pc[1]) == OP_JUMP);
@@ -81,9 +81,9 @@ void do_cond(eris_state_t *S, bool cond)
  * a very unpredictable way. highly undesirable, could cause long-lived garbage.
  */
 
-void eris_run(eris_state_t *state)
+void eris_vm_run(vm_state_t *state)
 {
-    eris_state_t S = *state;
+    vm_state_t S = *state;
 #define REG(n)      (S.regs[n])
 
     /* The ((void) 0)s that you see in the following code are garbage to appease

@@ -94,14 +94,14 @@ int main(int argc, char **argv)
 
     obj_t *bar = make_bar();
 
-    eris_state_t state = ((eris_state_t) {
+    vm_state_t state = ((vm_state_t) {
             .pc = bar_code,
             .regs = stack,
             .frames = cont,
             .func = OBJ_CLOSURE(bar)
     });
 
-    eris_run(&state);
+    eris_vm_run(&state);
 
     return 0;
     (void) argc, (void) argv;
