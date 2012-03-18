@@ -1,27 +1,30 @@
 EXES=rvmi
 
 RVMI_LIBS=slz
-RVMI_SOURCES=rvmi.c rvm_vm.c rvm_runtime.c rvm_shapes.c
+RVMI_SOURCES=rvmi.c runtime.c shapes.c vm.c
 
-HEADERS=rvm.h rvm_runtime.h rvm_util.h rvm_vm.h misc.h
-MISC_FILES=README enum_op Makefile config.mk depclean genenum
+HEADERS=misc.h runtime.h types.h vm.h vm_util.h
+HEADERS+=$(wildcard inc/*.h)
+MISC_FILES=README inc/README enum_op Makefile config.mk depclean genenum
 TAR_FILES=$(MISC_FILES) $(HEADERS) $(RVMI_SOURCES)
 
 # Make "all" default target.
 .PHONY: all
-all:
+all: $(EXES)
 
 include config.mk
 
-all: $(EXES)
+# Necessary additional configuration.
+INCLUDE_DIRS+= inc/
 
+
 # Real targets.
 rvmi: $(RVMI_SOURCES:.c=.o)
 rvmi: LIBS+=$(RVMI_LIBS)
 
 # Tarballs
-rvm.tar.gz: $(TAR_FILES)
-rvm.tar.bz2: $(TAR_FILES)
+eris.tar.gz: $(TAR_FILES)
+eris.tar.bz2: $(TAR_FILES)
 
 # Disassembly targets.
 ifneq (, $(filter rvmi.s rvmi.rodata,$(MAKECMDGOALS)))
@@ -84,7 +87,7 @@ nodeps:
 
 clean:
 	find . -name '*.o' -delete
-	rm -f $(EXES) rvm.tar.* rvmi.s rvmi.rodata
+	rm -f $(EXES) eris.tar.* rvmi.s rvmi.rodata
 
 pristine: clean nodeps
 	rm -f flags new_flags $(ENUM_HEADERS)
@@ -119,7 +122,7 @@ $(shell find . -name '*.dep' -empty -print0 | xargs -0 rm -f)
 CFILES=$(shell find . -name '*.c')
 
 # Only include dep files if not cleaning.
-NODEP_RULES=$(CLEAN_RULES) rvm.tar.% uninstall
+NODEP_RULES=$(CLEAN_RULES) eris.tar.% uninstall
 
 ifneq (,$(filter-out $(NODEP_RULES), $(MAKECMDGOALS)))
 include $(CFILES:.c=.dep)

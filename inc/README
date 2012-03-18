@@ -1,0 +1,2 @@
+This directory is for the header files forming liberis' public API. That is,
+these are the header files that actually get installed on a user's system.

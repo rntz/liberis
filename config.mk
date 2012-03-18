@@ -21,7 +21,7 @@ LDFLAGS+=$(addprefix -L,$(LIB_DIRS))
 
 # Release vs. debugging compile flags
 CFLAGS_DEBUG= -O0 -ggdb3
-CFLAGS_RELEASE= -O3 -fomit-frame-pointer -DNDEBUG -DRVM_RELEASE
+CFLAGS_RELEASE= -O3 -fomit-frame-pointer -DNDEBUG -DERIS_RELEASE
 # feel free to mess around with this one.
 CFLAGS_CUSTOM=
 
@@ -44,7 +44,7 @@ endif
 # For building with clang. Notably, don't have to change any compilation flags.
 # NB. Compiling with clang gives nicer compilation error messages, but forfeits
 # the ability to use macros inside gdb.
-#CC=clang
+CC=clang
 
 
 # Just for fun, if you want to see the various ways I'm violating the c99 spec.

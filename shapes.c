@@ -1,7 +1,7 @@
-#include "rvm.h"
+#include "vm.h"
 
 #define SHAPE(shape)                             \
-    rvm_shape_t rvm_shape_##shape = {            \
+    shape_t eris_shape_##shape = {               \
         .name = #shape                           \
     }
 

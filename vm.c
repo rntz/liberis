@@ -1,39 +1,40 @@
 #include <assert.h>
 #include <string.h>
 
+#include <eris.h>
+
 #include "misc.h"
-#include "rvm.h"
-#include "rvm_runtime.h"
-#include "rvm_util.h"
-#include "rvm_vm.h"
+#include "runtime.h"
+#include "vm.h"
+#include "vm_util.h"
 
 
 /* Helper functions for call instructions. */
 /* Does arity checking and conses excess variadic arguments. */
 static inline
-void do_precall(rvm_state_t *S, rvm_closure_t *func,
-                rvm_reg_t offset, rvm_nargs_t nargs)
+void do_precall(eris_state_t *S, closure_t *func,
+                reg_t offset, nargs_t nargs)
 {
     if (LIKELY(nargs == func->proto->num_args))
         return;
 
     if (LIKELY(func->proto->variadic)) {
-        rvm_die("variadic function calls unimplemented");
+        eris_die("variadic function calls unimplemented");
     }
     else {
-        rvm_arity_error("arity mismatch");
+        eris_arity_error("arity mismatch");
     }
     (void) S; (void) offset;    /* unused */
 }
 
 static inline
-void do_call(rvm_state_t *S, rvm_closure_t *func,
-             rvm_reg_t offset, rvm_nargs_t nargs)
+void do_call(eris_state_t *S, closure_t *func,
+             reg_t offset, nargs_t nargs)
 {
     do_precall(S, func, offset, nargs);
 
     /* Push return frame on control stack. */
-    rvm_frame_t *frame = ++S->frames;
+    frame_t *frame = ++S->frames;
     frame->pc = S->pc;
     frame->func = S->func;
 
@@ -44,8 +45,8 @@ void do_call(rvm_state_t *S, rvm_closure_t *func,
 }
 
 static inline
-void do_tailcall(rvm_state_t *S, rvm_closure_t *func,
-                 rvm_reg_t offset, rvm_nargs_t nargs)
+void do_tailcall(eris_state_t *S, closure_t *func,
+                 reg_t offset, nargs_t nargs)
 {
     do_precall(S, func, offset, nargs);
 
@@ -53,14 +54,14 @@ void do_tailcall(rvm_state_t *S, rvm_closure_t *func,
     S->func = func;
     S->pc = S->func->proto->code;
     /* Move down the arguments into appropriate slots. */
-    memmove(S->regs, S->regs + offset, sizeof(rvm_val_t) * nargs);
+    memmove(S->regs, S->regs + offset, sizeof(val_t) * nargs);
 }
 
 static inline
-void do_cond(rvm_state_t *S, bool cond)
+void do_cond(eris_state_t *S, bool cond)
 {
     /* The instruction after a conditional is required to be a jump. */
-    assert (RVMI_OP(S->pc[1]) == RVM_OP_JUMP);
+    assert (VM_OP(S->pc[1]) == OP_JUMP);
 
     if (cond)
         /* Skip next instruction. */
@@ -69,7 +70,7 @@ void do_cond(rvm_state_t *S, bool cond)
         /* Make the following jump. (1 + ...) because the current pc is 1
          * behind that of the jump instruction.
          */
-        S->pc += 1 + (rvm_jump_offset_t) RVMI_LONGARG2(*(S->pc + 1));
+        S->pc += 1 + (jump_offset_t) VM_LONGARG2(*(S->pc + 1));
 }
 
 
@@ -80,9 +81,9 @@ void do_cond(rvm_state_t *S, bool cond)
  * a very unpredictable way. highly undesirable, could cause long-lived garbage.
  */
 
-void rvm_run(rvm_state_t *state)
+void eris_run(eris_state_t *state)
 {
-    rvm_state_t S = *state;
+    eris_state_t S = *state;
 #define REG(n)      (S.regs[n])
 
     /* The ((void) 0)s that you see in the following code are garbage to appease
@@ -90,14 +91,14 @@ void rvm_run(rvm_state_t *state)
      * follow a label or case. */
   begin:
     (void) 0;
-    const rvm_instr_t instr = *S.pc;
+    const instr_t instr = *S.pc;
 
     /* Use these macros only if their value is to be used only once. */
-#define OP   RVMI_OP(instr)
-#define ARG1 RVMI_ARG1(instr)
-#define ARG2 RVMI_ARG2(instr)
-#define ARG3 RVMI_ARG3(instr)
-#define LONGARG2 RVMI_LONGARG2(instr)
+#define OP   VM_OP(instr)
+#define ARG1 VM_ARG1(instr)
+#define ARG2 VM_ARG2(instr)
+#define ARG3 VM_ARG3(instr)
+#define LONGARG2 VM_LONGARG2(instr)
 #define DEST REG(ARG1)
 
 #define UPVAL(upval) (S.func->upvals[(upval)])
@@ -105,24 +106,24 @@ void rvm_run(rvm_state_t *state)
 
     /* TODO: order cases by frequency. */
     switch (OP) {
-      case RVM_OP_MOVE:
+      case OP_MOVE:
         DEST = REG(ARG2);
         ++S.pc;
         break;
 
-      case RVM_OP_LOAD_INT:
+      case OP_LOAD_INT:
         /* Tag the integer appropriately. */
         /* TODO: factor out into macros. */
-        DEST = ((rvm_val_t)LONGARG2 << 1) | 1;
+        DEST = ((val_t)LONGARG2 << 1) | 1;
         ++S.pc;
         break;
 
-      case RVM_OP_LOAD_UPVAL:
+      case OP_LOAD_UPVAL:
         DEST = UPVAL(ARG2);
         ++S.pc;
         break;
 
-      case RVM_OP_LOAD_CELL:
+      case OP_LOAD_CELL:
         DEST = CELL(ARG2);
         ++S.pc;
         break;
@@ -155,25 +156,25 @@ void rvm_run(rvm_state_t *state)
 #define CELL_FUNC VAL_CLOSURE(CELL(ARG1))
 #define REG_FUNC VAL_CLOSURE(REG(ARG1))
 
-      case RVM_OP_CALL_CELL:
+      case OP_CALL_CELL:
         do_call(&S, CELL_FUNC, ARG2, ARG3);
         break;
 
-      case RVM_OP_CALL_REG:
+      case OP_CALL_REG:
         do_call(&S, REG_FUNC, ARG2, ARG3);
         break;
 
-      case RVM_OP_TAILCALL_CELL:
+      case OP_TAILCALL_CELL:
         do_tailcall(&S, CELL_FUNC, ARG2, ARG3);
         break;
 
-      case RVM_OP_TAILCALL_REG:
+      case OP_TAILCALL_REG:
         do_tailcall(&S, REG_FUNC, ARG2, ARG3);
         break;
 
 
         /* Other instructions. */
-      case RVM_OP_JUMP:
+      case OP_JUMP:
         /* NOT C99 SPEC: unsigned to signed integer conversion is
          * implementation-defined or may raise a signal when the unsigned value
          * is not representable in the signed target type. We depend on
@@ -183,34 +184,34 @@ void rvm_run(rvm_state_t *state)
          * appropriate modulo arithmetic, and if gcc & clang are smart enough
          * this will compile into a nop on x86(-64). Should test this, though.
          */
-        S.pc += (rvm_jump_offset_t) LONGARG2;
+        S.pc += (jump_offset_t) LONGARG2;
         break;
 
-      case RVM_OP_RETURN: (void) 0;
+      case OP_RETURN: (void) 0;
         /* Put the return value where it ought to be. */
         REG(0) = REG(ARG1);
-        rvm_frame_t *frame = S.frames--;
+        frame_t *frame = S.frames--;
         /* We determine how far to pop the stack by looking at the argument
          * offset given in the CALL instruction that set up our frame.
          */
-        S.regs -= RVMI_ARG2(*frame->pc);
+        S.regs -= VM_ARG2(*frame->pc);
         S.pc = frame->pc + 1;   /* +1 to skip past the call instr. */
         S.func = frame->func;
         break;
 
-      case RVM_OP_IF:
+      case OP_IF:
         do_cond(&S, !VAL_IS_NIL(REG(ARG1)));
         break;
 
-      case RVM_OP_IFNOT:
+      case OP_IFNOT:
         do_cond(&S, VAL_IS_NIL(REG(ARG1)));
         break;
 
-      case RVM_OP_CLOSE: (void) 0;
-        rvm_arg_t which_func = ARG1;
-        rvm_upval_t nupvals = ARG2;
-        rvm_proto_t *proto = S.func->proto->local_funcs[which_func];
-        rvm_closure_t *func = MAKE_CLOSURE(nupvals);
+      case OP_CLOSE: (void) 0;
+        arg_t which_func = ARG1;
+        upval_t nupvals = ARG2;
+        proto_t *proto = S.func->proto->local_funcs[which_func];
+        closure_t *func = MAKE_CLOSURE(nupvals);
         func->proto = proto;
 
         /* TODO: load upvals into func. */
@@ -218,10 +219,10 @@ void rvm_run(rvm_state_t *state)
         assert(0);
 
       default:
-#ifdef RVM_RELEASE
+#ifdef ERIS_RELEASE
         UNREACHABLE;
 #endif
-        rvm_die("unrecognized or unimplemented opcode: %d", OP);
+        eris_die("unrecognized or unimplemented opcode: %d", OP);
     }
 
     goto begin;
