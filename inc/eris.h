@@ -77,8 +77,10 @@ void eris_cons(eris_state_t *S);
 void eris_call(eris_state_t *S, eris_idx_t func_idx, size_t nargs);
 
 /* Pushing data onto stack. */
+/* TODO: how do I create C closures referencing eris values? */
 void eris_push_func(eris_state_t *S,
-                    void (*func)(eris_state_t*, void*),
+                    /* returns the index of the return value. */
+                    eris_idx_t (*func)(eris_state_t*, void*),
                     void *data);
 
 void eris_push_cons(eris_state_t *S, eris_idx_t car_idx, eris_idx_t cdr_idx);
