@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include <eris.h>
+#include <eris/eris.h>
 
 #include "misc.h"
 #include "vm.h"

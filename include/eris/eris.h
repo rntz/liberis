@@ -1,12 +1,12 @@
-#ifndef _ERIS_H_
-#define _ERIS_H_
+#ifndef _ERIS_ERIS_H_
+#define _ERIS_ERIS_H_
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 
-#include <eris_portability.h>
+#include <eris/portability.h>
 
 typedef struct eris_vm eris_vm_t;
 typedef struct eris_state eris_state_t;

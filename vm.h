@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include <eris.h>
+#include <eris/eris.h>
 
 #include "types.h"
 #include "enum_op.h"

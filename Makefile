@@ -4,8 +4,8 @@ RVMI_LIBS=slz
 RVMI_SOURCES=rvmi.c runtime.c shapes.c vm.c
 
 HEADERS=misc.h runtime.h types.h vm.h vm_util.h
-HEADERS+=$(wildcard inc/*.h)
-MISC_FILES=README inc/README enum_op Makefile config.mk depclean genenum
+HEADERS+=$(shell find include/ -name '*.h')
+MISC_FILES=README include/README enum_op Makefile config.mk depclean genenum
 TAR_FILES=$(MISC_FILES) $(HEADERS) $(RVMI_SOURCES)
 
 # Make "all" default target.
@@ -15,7 +15,7 @@ all: $(EXES)
 include config.mk
 
 # Necessary additional configuration.
-INCLUDE_DIRS+= inc/
+INCLUDE_DIRS+= include/
 
 
 # Real targets.

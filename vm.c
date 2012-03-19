@@ -1,7 +1,7 @@
 #include <assert.h>
 #include <string.h>
 
-#include <eris.h>
+#include <eris/eris.h>
 
 #include "misc.h"
 #include "runtime.h"

@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include <eris.h>
+#include <eris/eris.h>
 
 /* Different instructions take different numbers of bytes to represent. However,
  * it behooves us to divide the instruction stream into fixed-size chunks such
