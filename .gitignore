@@ -1,5 +1,6 @@
 *.dep
 *.o
+/eris.tar.*
 /enum_*.h
 /rvmi
 /rvmi.s
