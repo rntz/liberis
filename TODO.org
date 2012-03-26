@@ -1,0 +1,21 @@
+* NOW
+1. Finish up eris/eris.h.
+
+2. Modify VM to support calls out to C funcs with the stack-based interface.
+   This may involve putting tags on stack frames. They might need this anyway
+   for exceptions.
+
+* SOON
+- Figure out and *write down* a description of the bootstrapping process.
+
+- Figure out how GC is gonna work & make it work.
+
+- Figure out how exceptions are gonna work.
+
+- Figure out how we're gonna deal with return stack overflows. Can we statically
+  guarantee the return stack won't overflow before the register stack?
+
+* EVENTUALLY
+# Empirical performance questions
+- Would representing nil as NULL speed us up? Would need to change
+  representation of "undefined" in cells.
