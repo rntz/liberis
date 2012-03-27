@@ -1,5 +1,5 @@
-#ifndef _ERIS_RUNTIME_H_
-#define _ERIS_RUNTIME_H_
+#ifndef _RUNTIME_H_
+#define _RUNTIME_H_
 
 #include <stdarg.h>
 

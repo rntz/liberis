@@ -1,5 +1,5 @@
-#ifndef _ERIS_VM_H_
-#define _ERIS_VM_H_
+#ifndef _VM_H_
+#define _VM_H_
 
 #include <stddef.h>
 #include <stdint.h>

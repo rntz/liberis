@@ -1,5 +1,5 @@
-#ifndef _ERIS_TYPES_H_
-#define _ERIS_TYPES_H_
+#ifndef _TYPES_H_
+#define _TYPES_H_
 
 #include <stdint.h>
 #include <stdbool.h>

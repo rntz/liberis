@@ -1,5 +1,5 @@
-#ifndef _ERIS_MISC_H_
-#define _ERIS_MISC_H_
+#ifndef _MISC_H_
+#define _MISC_H_
 
 #include <assert.h>
 

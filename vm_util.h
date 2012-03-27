@@ -1,6 +1,6 @@
 /* Useful macros and inline functions for the vm implementation. */
-#ifndef _ERIS_VM_UTIL_H_
-#define _ERIS_VM_UTIL_H_
+#ifndef _VM_UTIL_H_
+#define _VM_UTIL_H_
 
 #include "misc.h"
 #include "runtime.h"
