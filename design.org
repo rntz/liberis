@@ -27,9 +27,10 @@ Operands are:
 - our registers
 - our upvals
 
-Upvals are not indirected; an environment directly contains the upvals needed.
-This means they are *copied* when closed-over, so mutations to the register or
-upval they came from will not propagate to them and vice versa.
+Upvals are not indirected; a closure directly contains the upvals needed. This
+means they are *copied* when closed-over, so mutations to the register or upval
+they came from will not propagate to them and vice versa. This is in contrast to
+lua's upvals.
 
 ** Big picture re upval copying semantics
 
@@ -54,10 +55,9 @@ scheme", David Andrew Krantz, 1988.
 
 * Constants
 
-Small numeric constants can be "immediate" (special operand form)?
-Medium numeric constants can be loaded by an instruction.
-Large numbers and other constants (eg. strings) are stored along with upvals
-  and accessed the same way.
+General mechanism for constants is to put them into the upvals of a closure.
+Since /all/ functions are closures (no special-case for toplevel funcs), this
+always works. I may decide later to add more optimized ways to handle constants.
 
 * Calling and return convention
 
@@ -73,17 +73,23 @@ Lua also does tailcalls by setting up a frame as usual and then moving the frame
 down. Again, allows tailcalling something without overwriting your own args /
 explicitly moving args into place. Might turn out to be possible to avoid having
 to do this via clever compilation, though. (Could we just fast-path tailcalls
-whose args start at 0?)
+whose args start at 0? Or memmove might already fast-path if src=dst.)
 
-Maybe just expose a "copy register range" instruction? Cleaner perhaps, but
-probably slower. Might be useful anyways, but only add if actually needed.
+Maybe just expose a "copy register range" instruction? Probably not: it's slower
+(more bytecode instructions for a common operation). Might be useful anyways,
+but only add if actually needed.
 
 - mmove a b n
   copies b..b+n to a..a+n. expects a < b.
 
-* Intra-function labels, function labels, jumps and calls
+* Labels, jumps and calls
 
-Intra-function jumps are relative (pc offsets).
+Intra-function jumps are relative (pc offsets). Extra-function jumps/calls are
+all indirect (through function pointers or "cells").
+
+* Cells
+
+TODO: Explain cells.
 
 * Precise GC support
 
@@ -169,23 +175,15 @@ If we want our comparison ops to also support floating-point operands with IEEE
 semantics, the story gets even more complicated. I'm not worrying about that for
 now.
 
-* A library or a part of the runtime?
+* Language vs. library vs. runtime
 
-Do I want to implement eris using rvm as a library or in tandem with rvm?
+Unfortunately the internals of the VM are too tangled up with eris' semantics to
+develop it as a separate library. However, eris itself should present a library
+interface, a la Lua: it should be embeddable in other C apps.
 
-Ideally as a library. What would I have to do for this to be feasible?
-
-- Eris will have its own data structures (eg. modules) unfamiliar to rvm. How
-  can we handle these?
-
-  Tags are just pointers to some metadata, so eris creates the appropriate
-  metadata somewhere and uses that as a tag.
-
-- If it's a library, we hope for it to have some measure of API stability. How
-  can we hide our internals enough to have a reasonably stable API while still
-  exposing enough for a language to use us as a target?
-
-** C interface
-
-Even if rvm not implemented as library, still want languages built on top of it
-to (be able to) have a reasonable C FFI.
+However, since the plan is to write the compiler in Eris itself & bootstrap,
+this means that we can't expose "compile source" functions from liberis itself,
+since they're written in Eris! Instead, we expose "load this compiled code"
+functionality, and a client app will need to load the byte-compiled code for the
+compiler, then invoke the eris compiler through the eris interface. This is kind
+of a pain in the ass, but I don't see a better way.
