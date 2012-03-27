@@ -8,6 +8,15 @@
 #include "vm.h"
 #include "vm_util.h"
 
+#include "portability.h"
+#if HAVE_PRAGMA_GCC_DIAGNOSTIC
+    /* Causes an error if we don't explicitly handle all cases of `enum op' in a
+     * switch statement, _even though_ we have a "default" case. This is
+     * desirable for the big opcode switch statement ahead.
+     */
+#pragma GCC diagnostic error "-Wswitch-enum"
+#endif
+
 
 /* Helper functions for call instructions. */
 /* Does arity checking and conses excess variadic arguments. */
