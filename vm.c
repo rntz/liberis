@@ -105,7 +105,7 @@ void eris_vm_run(vm_state_t *state)
 #define CELL(upval) (deref_cell(get_cell(UPVAL(upval))))
 
     /* TODO: order cases by frequency. */
-    switch (OP) {
+    switch ((enum op) OP) {
       case OP_MOVE:
         DEST = REG(ARG2);
         ++S.pc;
