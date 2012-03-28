@@ -8,7 +8,6 @@
 #include "vm.h"
 #include "vm_util.h"
 
-#include "portability.h"
 #if HAVE_PRAGMA_GCC_DIAGNOSTIC
     /* Causes an error if we don't explicitly handle all cases of `enum op' in a
      * switch statement, _even though_ we have a "default" case. This is
