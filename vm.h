@@ -38,6 +38,35 @@ enum op {
 #define VM_ARG3(instr)        ((arg_t)((instr) >> 24))
 #define VM_LONGARG2(instr)    ((longarg_t)((instr) >> 16))
 
+
+/* VM state structures */
+typedef uint8_t frame_tag_t;
+enum frame_tag {
+    FRAME_CALL, FRAME_C_CALL,
+};
+
+typedef struct {
+    frame_tag_t tag;
+    instr_t *pc;
+    closure_t *func;
+} call_frame_t;
+
+typedef struct {
+    frame_tag_t tag;
+} c_call_frame_t;
+
+typedef struct {
+    instr_t *pc;
+    /* Index into our frame on the stack of registers. This stack grows up. */
+    val_t *regs;
+    /* Stack of control/return frames. This stack grows down. Points to the tag
+     * of the last frame pushed (the frame we return into).
+     */
+    void *frames;
+    closure_t *func;
+} vm_state_t;
+
+
 /* Interface to the vm. */
 void eris_vm_run(vm_state_t *state);
 

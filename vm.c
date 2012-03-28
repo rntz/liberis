@@ -9,10 +9,13 @@
 #include "vm_util.h"
 
 #if HAVE_PRAGMA_GCC_DIAGNOSTIC
-    /* Causes an error if we don't explicitly handle all cases of `enum op' in a
-     * switch statement, _even though_ we have a "default" case. This is
-     * desirable for the big opcode switch statement ahead.
-     */
+/* Causes an error if we don't explicitly handle all cases of an enumerated type
+ * in a switch statement, _even though_ we have a "default" case. This is
+ * desirable for the switches in this file, which really should be handling all
+ * cases explicitly, and which have default cases which exist only to catch bugs
+ * (in a debug build) or inform the compiler that the case is unreachable (in a
+ * release build).
+ */
 #pragma GCC diagnostic error "-Wswitch-enum"
 #endif
 
@@ -41,8 +44,10 @@ void do_call(vm_state_t *S, closure_t *func,
 {
     do_precall(S, func, offset, nargs);
 
-    /* Push return frame on control stack. */
-    frame_t *frame = ++S->frames;
+    /* Push return frame on control stack, which grows down. */
+    call_frame_t *frame = ((call_frame_t*) S->frames) - 1;
+    S->frames = frame;
+    frame->tag = FRAME_CALL;
     frame->pc = S->pc;
     frame->func = S->func;
 
@@ -198,7 +203,21 @@ void eris_vm_run(vm_state_t *state)
       case OP_RETURN: (void) 0;
         /* Put the return value where it ought to be. */
         REG(0) = REG(ARG1);
-        frame_t *frame = S.frames--;
+
+        frame_tag_t frame_tag = *(frame_tag_t*) S.frames;
+        switch ((enum frame_tag) EXPECT_LONG(frame_tag, FRAME_CALL)) {
+          case FRAME_CALL: break;
+            /* C calls inevitably come through our API, so the API function that
+             * called us will do the necessary cleaning up. */
+          case FRAME_C_CALL: return;
+          default: IMPOSSIBLE("unrecognized or unimplemented frame tag: %u",
+                              frame_tag);
+        }
+
+        /* Pop the control stack (remember, the control stack grows down). */
+        call_frame_t *frame;
+        S.frames = (frame = (call_frame_t*) S.frames) + 1;
+
         /* We determine how far to pop the stack by looking at the argument
          * offset given in the CALL instruction that set up our frame.
          */
@@ -227,10 +246,7 @@ void eris_vm_run(vm_state_t *state)
         assert(0);
 
       default:
-#ifdef ERIS_RELEASE
-        UNREACHABLE;
-#endif
-        eris_die("unrecognized or unimplemented opcode: %d", OP);
+        IMPOSSIBLE("unrecognized or unimplemented opcode: %u", OP);
     }
 
     goto begin;

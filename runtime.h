@@ -3,10 +3,17 @@
 
 #include <stdarg.h>
 
+#include "misc.h"
 #include "types.h"
 
 void eris_vdie(const char *format, va_list ap);
 void eris_die(const char *format, ...);
+
+#if ERIS_RELEASE
+#define IMPOSSIBLE(msg, ...) UNREACHABLE
+#else
+#define IMPOSSIBLE(msg, ...) (eris_die(msg, __VA_ARGS__))
+#endif
 
 /* These will probably need adjusting. */
 void eris_type_error(char *x, ...);

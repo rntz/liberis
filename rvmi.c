@@ -87,7 +87,7 @@ void poison(void *x, uint32_t word, size_t size) {
 int main(int argc, char **argv)
 {
     val_t stack[100];
-    frame_t cont[10];
+    call_frame_t cont[20];
 
     poison(stack, 0xdeadbeef, sizeof(stack));
     poison(cont, 0xcafebabe, sizeof(cont));

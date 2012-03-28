@@ -96,18 +96,4 @@ SHAPE(cell) {
 /* clean up our macros */
 #undef SHAPE
 
-
-/* Data types below this line are not embedded inside an obj_t. */
-typedef struct {
-    instr_t *pc;
-    closure_t *func;
-} frame_t;
-
-typedef struct {
-    instr_t *pc;
-    val_t *regs;
-    frame_t *frames;        /* control/return stack */
-    closure_t *func;
-} vm_state_t;
-
 #endif
