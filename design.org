@@ -10,6 +10,101 @@
   - Non-naive view of environment capture.
     (don't prevent a var from being gced due to a closure that never uses it)
 
+* Tags
+
+Current scheme: (WORDSIZE-1)-bit ints have low bit high. Everything else is a
+pointer to an allocated block with a header tag. This is good if I'm doing
+modulo arithmetic on numbers, because modulo-31 is bearable. But if I'm doing a
+full numeric stack, then other options come to mind.
+
+In particular, use more than 1 tag bit. I can use at most 3 tag bits on a
+pointer while still being portable to 32-bit systems, which is desirable. With a
+variable-length encoding I could use more tag bits, but the only non-pointer
+values I'm likely to want are small integers (and maybe nil).
+
+The immediate problems are:
+1. 3 bits = 8 datatypes, which is probably not enough.
+2. Host program might want to define its own datatypes.
+
+Both can be solved in the same fashion: Really important datatypes get a 3-bit
+tag. Otherwise, there is a 3-bit tag for "block with header tag", and the header
+tag is a pointer to type metadata as in current scheme.
+
+Benefits to this scheme:
+1. Lower memory overhead (eg. conses go from 3-word to 2-word).
+2. Possible GC speedup, since GC can switch on 3-bit tag and special-case the
+   common datatypes. However, could do this with pointer-based scheme as well
+   (though as if/else chain, not switch).
+
+Disbenefits to it:
+1. Need full numeric stack. 29-bit 2's complement arithmetic is not bearable.
+   However, probably wanted this anyway.
+2. Slight extra overhead on dealing with "uncommon" types.
+3. It makes the "undefined" state of cells more interesting, and possibly less
+   efficient, to encode.
+
+Conclusion: Probably a good idea.
+
+# What tags would we use?
+1. Fixnum
+2. Closure
+3. Builtin
+4. Cons
+5. ? Symbol
+6. ? String
+7. ? Boxed number
+8. Tagged object (? or nil if null)
+
+Unfortunately this is a decision that would optimally be made with the aid of
+hard evidence on the performance impacts, but I have no such evidence.
+
+Candidates:
+- *Nil/empty list*
+
+  If nil is just a symbol, this is infeasible. On the other hand, could make
+  symbols 3-bit tagged. Then comparing against nil is slightly more interesting.
+  Could solve "compare with nil" by pre-interning nil, and having it be a
+  statically known value. This seems perhaps the best option, as long as I'm
+  okay with nil being a symbol.
+
+  Alternatively, nil could have the 3-bit tag of a type that doesn't contain it,
+  but whose content is a pointer (not an immediate), and be a NULL pointer. This
+  puts extra overhead on the usage of that type, though. Likely types:
+  - cons (nil is "empty list"; punnery on use of conses for lists)
+  - symbol (is nil a symbol?)
+  - tagged object (if we're gonna have extra overhead, put it on the uncommon case)
+
+- *String*
+  String manipulation is fairly common.
+
+- *Symbol*
+  How common is symbol manipulation, anyway? We don't do it when looking up
+  globals. OTOH, if we use symbols for representing branches of ADTs etc, then
+  checking symbol equality will be common.
+
+- *Extnum/Boxed number*
+  Not sure this is a good idea. Boxed numbers will need tags indicating their
+  representation (large integer, rational, float) anyway, so why not just tagged
+  object?
+
+Non-candidates:
+- *Cell*
+
+  Loading through cells is so common that LOAD_CELL doesn't check that the thing
+  it's loading through is in fact a cell; ensuring that is up to the compiler.
+  So this doesn't actually need to be 3-bit tagged!
+
+* Builtins
+
+The original plan was to implement builtins (eg. cons, car, cdr, +, -, *, /) as
+C functions. Perhaps as "special" C functions that don't get the normal
+stack-based treatment, or perhaps not. But in either case, significant overhead
+for calling them. Instead we could have another type, builtins, that the
+compiler knows how to handle. Code involving "cons" doesn't get compiled
+specially - it's still a call through a cell, so "cons" can be
+overridden/redefined. But when we actually run the call instruction, it simply
+notes that the "function" value is a builtin, and switches on it.
+
 * General notes
 
 Rips off Lua pretty heavily. Register machine, each function indicates how many
