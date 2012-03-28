@@ -94,6 +94,10 @@ void do_cond(vm_state_t *S, bool cond)
  * a very unpredictable way. highly undesirable, could cause long-lived garbage.
  */
 
+/* TODO: Use computed gotos if available. See femtolisp's flisp.c for a good way
+ * to do this.
+ */
+
 void eris_vm_run(vm_state_t *state)
 {
     vm_state_t S = *state;

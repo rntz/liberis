@@ -24,6 +24,12 @@ enum op {
     /* conditional control flow operators */
     OP_IF, OP_IFNOT,
 
+    /* TODO: exceptions */
+    /* /\* exceptional control flow operators *\/
+     * OP_RAISE,
+     * /\* NB. must precede an OP_CALL_* instr. *\/
+     * OP_HANDLE, */
+
     /* miscellany */
     OP_CLOSE,
 };
@@ -43,6 +49,8 @@ enum op {
 typedef uint8_t frame_tag_t;
 enum frame_tag {
     FRAME_CALL, FRAME_C_CALL,
+    /* TODO: exceptions */
+    /* FRAME_HANDLE, */
 };
 
 typedef struct {
