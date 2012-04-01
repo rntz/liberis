@@ -170,8 +170,8 @@ void eris_vm_run(vm_state_t *state)
          *  CALL_FUNC gets the closure being called for CALL and TAILCALL ops.
          *  CALL_REG_FUNC does the same for CALL_REG and TAILCALL_REG.
          */
-#define CELL_FUNC VAL_CLOSURE(CELL(ARG1))
-#define REG_FUNC VAL_CLOSURE(REG(ARG1))
+#define CELL_FUNC VAL_AS_CLOSURE(CELL(ARG1))
+#define REG_FUNC VAL_AS_CLOSURE(REG(ARG1))
 
       case OP_CALL_CELL:
         do_call(&S, CELL_FUNC, ARG2, ARG3);

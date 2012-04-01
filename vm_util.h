@@ -33,11 +33,11 @@ static inline obj_t *obj_check_tag(shape_t *tag, obj_t *obj)
 #define OBJ_AS(shape, obj) OBJ_CONTENTS(shape, OBJ_CHECK_TAG(shape, obj))
 #define VAL_AS(shape, value) OBJ_AS(shape, VAL_OBJ(value))
 
-#define OBJ_CLOSURE(o) OBJ_AS(closure, o)
+#define OBJ_AS_CLOSURE(o) OBJ_AS(closure, o)
 
-#define VAL_CLOSURE(v) VAL_AS(closure, v)
-#define VAL_CONS(v) VAL_AS(cons, v)
-#define VAL_STRING(v) VAL_AS(string, v)
+#define VAL_AS_CLOSURE(v) VAL_AS(closure, v)
+#define VAL_AS_CONS(v) VAL_AS(cons, v)
+#define VAL_AS_STRING(v) VAL_AS(string, v)
 
 
 /* This is to be used only in cases where we statically know that v is a "cell".

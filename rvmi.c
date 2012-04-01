@@ -66,7 +66,7 @@ obj_t *make_bar(void)
             .variadic = false });
 
     obj_t *foo = make_foo();
-    proto->local_funcs[0] = OBJ_CLOSURE(foo)->proto;
+    proto->local_funcs[0] = OBJ_AS_CLOSURE(foo)->proto;
 
     obj_t *gfoo = make_cell("foo", OBJ_VAL(foo));
 
@@ -98,7 +98,7 @@ int main(int argc, char **argv)
             .pc = bar_code,
             .regs = stack,
             .frames = cont,
-            .func = OBJ_CLOSURE(bar)
+            .func = OBJ_AS_CLOSURE(bar)
     });
 
     eris_vm_run(&state);
