@@ -18,22 +18,19 @@ pointers to memory blocks with a type header. Go back and optimize later once
 the system is built and working.
 
 ** Discussion in full
-Current scheme: (WORDBITS-1)-bit ints have low bit high. Everything else is a
-pointer to an allocated block with a header tag. This is necessary if I'm doing
-modulo arithmetic on numbers, because anything less than 31-bit arithmetic is
-unbearable. But if I'm doing a full numeric stack, then other options come to
-mind.
+Original scheme: (WORDBITS-1)-bit ints have low bit high. Everything else is a
+pointer to an allocated block with a header tag.
 
 The number of bits I use determines the minimum alignment of allocated objects.
 2 bits = 4 bytes, which is my alignment constraint already on 32-bit systems. 3
 bits = 8 bytes adds some overhead on 32-bit systems but might be worth it. 4
 bits = 16 bytes is probably too much. A variable-length encoding might be
-possible, but ugh what a PITA. Let k be the number of tag bits we eventually
-decide to use.
+possible, but ugh what a PITA.
 
-We'll probably want more than 2^k datatypes, so we use 2^k-1 tags for common
-types and reserve one tag for uncommon types; we determine the actual type of
-such an object from its header, which is a pointer to type metadata.
+Let k be the number of tag bits we eventually decide to use. We'll want more
+than 2^k types, so we use 2^k-1 tags for common types and reserve one tag for
+uncommon types; we determine the actual type of such an object from its header,
+which is a pointer to type metadata.
 
 Benefits of this scheme:
 1. Faster type testing. It avoids a memory access, but I'm not sure /how/
@@ -44,21 +41,15 @@ Benefits of this scheme:
    two instructions.
 
    Exceptions to "we're about to be accessing its memory anyway":
-   - nil check (but this is just a comparison anyway, since nil is static!)
+   - nil check. but this is just a comparison anyway, since nil is static!
 
-   - symbol equality, which is most common/need-to-be-fast op on symbols.
+   - symbol equality, which is most common/need-to-be-fast op on symbols. but
+     this is fast anyway as long as I only care about results on symbols, since
+     equal symbols are identical objects!
 
    - values that can be stored entirely in a word (incl. tag):
      - fixnums (small ints)
      - builtins
-
-   Actually, these exceptions suggests a 2-bit encoding:
-   - tag for fixnum
-   - tag for builtins
-   - tag for symbols, incl. nil
-   - tag for everything else
-
-   Might want a tag for closures, too...
 
 2. (DISCREDITED) Lower memory overhead (eg. conses go from 3-word to 2-word)?
 
@@ -69,18 +60,18 @@ Benefits of this scheme:
    order to scan the heap during the "sweep" phase.
 
 3. (DISCREDITED) GC speedup, since GC can switch on 3-bit tag and special-case
-   the common datatypes. However, could do this with pointer-based scheme as
-   well (though as if/else chain, not switch). Is this really the time-consuming
-   part of GC? Probably not.
+   the common datatypes. But is this really the time-consuming part of GC?
+   Probably not.
 
 Disbenefits of it:
 1. Slight extra overhead on dealing with "uncommon" types.
 
+   This is especially important wrt closures: if closures are not in the common
+   tags list, then calls to closures (super common case) have extra overhead
+   (need to check tag bits, then check header).
+
 2. It makes the "undefined" state of cells more interesting, and possibly less
    efficient, to encode.
-
-3. (DISCREDITED) Need full numeric stack. 29-bit 2's complement arithmetic is
-   not bearable. But I want this anyway.
 
 *** What tags would we use if we had 8 tags?
 1. Fixnum
