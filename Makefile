@@ -1,12 +1,13 @@
 EXES=rvmi
 
-RVMI_LIBS=slz
-RVMI_SOURCES=rvmi.c runtime.c shapes.c vm.c
-
+SOURCES=rvmi.c runtime.c shapes.c vm.c
 HEADERS=misc.h runtime.h types.h vm.h vm_util.h
 HEADERS+=$(shell find include/ -name '*.h')
 MISC_FILES=README include/README enum_op Makefile config.mk depclean genenum
-TAR_FILES=$(MISC_FILES) $(HEADERS) $(RVMI_SOURCES)
+TAR_FILES=$(MISC_FILES) $(HEADERS) $(SOURCES)
+
+# Libraries we depend on.
+LIBS=gmp slz
 
 # Make "all" default target.
 .PHONY: all
@@ -19,8 +20,7 @@ INCLUDE_DIRS+= include/
 
 
 # Real targets.
-rvmi: $(RVMI_SOURCES:.c=.o)
-rvmi: LIBS+=$(RVMI_LIBS)
+rvmi: $(SOURCES:.c=.o)
 
 # Tarballs
 eris.tar.gz: $(TAR_FILES)
