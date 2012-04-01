@@ -34,6 +34,12 @@ enum op {
     OP_CLOSE,
 };
 
+enum builtin_op {
+#define BUILTIN(name, code) BOP_##name,
+#include "builtins.h"
+#undef BUILTIN
+};
+
 /* The magic constants used here are obvious, but will change if instruction
  * encoding scheme changes. */
 /* VM_ARG0 is used by instructions spanning multiple instr_ts. */

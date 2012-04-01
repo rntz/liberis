@@ -54,16 +54,16 @@ typedef struct {
 /* Types after this point should only exist embedded inside of an obj_t. */
 extern shape_t eris_shape_nil;
 
+/* TODO: complex numbers. */
 typedef uint8_t num_tag_t;
-enum num_tag { SMALL_INT, SMALL_FLOAT, LARGE_RATIO, LARGE_FLOAT };
+enum num_tag { NUM_INTPTR, NUM_MPQ, NUM_DOUBLE };
 
 SHAPE(num) {
     num_tag_t tag;
     union {
-        intptr_t small_int;
-        double small_float;
-        mpq_t large_ratio;
-        mpf_t large_float;
+        intptr_t v_intptr;
+        mpq_t v_mpq;
+        double v_double;
     };
 };
 
