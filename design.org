@@ -18,7 +18,7 @@ pointers to memory blocks with a type header. Go back and optimize later once
 the system is built and working.
 
 ** Discussion in full
-Current scheme: (WORDSIZE-1)-bit ints have low bit high. Everything else is a
+Current scheme: (WORDBITS-1)-bit ints have low bit high. Everything else is a
 pointer to an allocated block with a header tag. This is necessary if I'm doing
 modulo arithmetic on numbers, because anything less than 31-bit arithmetic is
 unbearable. But if I'm doing a full numeric stack, then other options come to
@@ -44,16 +44,19 @@ Benefits of this scheme:
    two instructions.
 
    Exceptions to "we're about to be accessing its memory anyway":
-   - nil check (but this can be made non-memory-accessing even without k-bit
-     tags by making nil a statically-allocated value)
+   - nil check (but this is just a comparison anyway, since nil is static!)
 
-   - builtins, potentially. we could easily have builtins be immediate values.
+   - symbol equality, which is most common/need-to-be-fast op on symbols.
 
-   Actually, these 2 exceptions suggests a 2-bit encoding:
-   - one tag for fixnum
-   - one tag for builtins
-   - one tag for nil (?)
-   - one tag for everything else
+   - values that can be stored entirely in a word (incl. tag):
+     - fixnums (small ints)
+     - builtins
+
+   Actually, these exceptions suggests a 2-bit encoding:
+   - tag for fixnum
+   - tag for builtins
+   - tag for symbols, incl. nil
+   - tag for everything else
 
    Might want a tag for closures, too...
 
@@ -71,13 +74,15 @@ Benefits of this scheme:
    part of GC? Probably not.
 
 Disbenefits of it:
-1. Need full numeric stack. 29-bit 2's complement arithmetic is not bearable.
-   However, probably wanted this anyway.
-2. Slight extra overhead on dealing with "uncommon" types.
-3. It makes the "undefined" state of cells more interesting, and possibly less
+1. Slight extra overhead on dealing with "uncommon" types.
+
+2. It makes the "undefined" state of cells more interesting, and possibly less
    efficient, to encode.
 
-# What tags would we use if we had 8 tags?
+3. (DISCREDITED) Need full numeric stack. 29-bit 2's complement arithmetic is
+   not bearable. But I want this anyway.
+
+*** What tags would we use if we had 8 tags?
 1. Fixnum
 2. Closure
 3. Builtin
