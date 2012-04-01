@@ -266,6 +266,45 @@ Options:
    cons:
    + slooooow (esp if you don't cache small ints)
 
+* Weak refs and finalizers
+
+We can implement both weak references and finalizers without too much difficulty
+as follows.
+
+** Weak references
+We add a new type of object, weak references. Weak references are either alive
+or dead; living weak refs have pointers to their referents; dead weak refs are
+just tombstones.
+
+During GC, when we come across a weak reference while scanning the heap, we do
+not recursively scan its referent pointer (since it is a *weak* reference).
+Instead we put the weak pointer onto a list of "living weak refs". At the end of
+the heap scan, we check each living weak ref and see whether its referent is now
+alive or dead, and update its state appropriately.
+
+That's it!
+
+** Finalizers
+Finalizers can be implemented on top of weak references, either in Eris itself
+or hardcoded into the Eris VM, as follows:
+
+A finalizer has a weak reference and a finalizer function. The function mustn't
+refer to the target of the weak ref; this will keep the target alive, keeping
+the finalizer alive, causing a memory leak.
+
+If implemented in the Eris VM, we keep finalizers in two lists, dormant or
+not-yet-run, according to whether their weak references are alive or dead. At
+the end of a GC cycle, we scan the dormant list and transfer finalizers with
+dead weak refs to the not-yet-run list. It is the host program's responsibility
+to run not-yet-run finalizers in a timely fashion, but we need to inform the
+host program of new not-yet-run finalizers post-GC; the exact interface here
+needs some consideration.
+
+If implemented in Eris, we only need a list of "dormant" finalizers; post-GC, we
+call an Eris function that scans this list and removes and calls the finalizers
+associated with dead weak refs. Again, the interface with the host program
+deserves some consideration.
+
 * Instruction encoding notes
 
 ** Comparisons
