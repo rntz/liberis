@@ -53,6 +53,10 @@ enum frame_tag {
     /* FRAME_HANDLE, */
 };
 
+/* FIXME: we currently assume that call_frame_t and c_call_frame_t have the same
+ * alignment constraints. (Otherwise the naive way we do frame pointer math
+ * doesn't work out.)
+ */
 typedef struct {
     frame_tag_t tag;
     instr_t *pc;
