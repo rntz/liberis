@@ -238,16 +238,38 @@ void eris_vm_run(vm_state_t *state)
         do_cond(&S, VAL_IS_NIL(REG(ARG1)));
         break;
 
+        /* NB. logical CLOSE instr spans multiple (>= 2) instr_ts.
+         * TODO: document format of CLOSE instr. */
       case OP_CLOSE: (void) 0;
-        arg_t which_func = ARG1;
-        upval_t nupvals = ARG2;
-        proto_t *proto = S.func->proto->local_funcs[which_func];
-        closure_t *func = MAKE_CLOSURE(nupvals);
-        func->proto = proto;
+        upval_t nupvals_upvals = ARG2; /* # upvals from parent upvals */
+        upval_t nupvals_regs = ARG3;   /* # upvals from registers */
+        upval_t nupvals = nupvals_upvals + nupvals_regs;
+        obj_t *funcobj = NEW_WITH(closure, upvals, nupvals);
+        DEST = OBJ_VAL(funcobj);
+        closure_t *func = OBJ_CONTENTS(closure, funcobj);
 
-        /* TODO: load upvals into func. */
+        /* TODO: carefully consider manually optimizing this. */
 
-        assert(0);
+        /* Actually construct the closure. */
+        ++S.pc;
+        arg_t which_func = VM_ARG0(*S.pc);
+        func->proto = S.func->proto->local_funcs[which_func];
+
+        /* We read the indices from which to populate the new closure's upvals
+         * from the instructions following the OP_CLOSE. */
+        size_t i = 1;
+        for (; i <= nupvals_upvals; ++i) {
+            upval_t idx = VM_ARGN(*(S.pc + i / sizeof(instr_t)),
+                                  i % sizeof(instr_t));
+            func->upvals[i] = S.func->upvals[idx];
+        }
+        for (; i <= nupvals; ++i) {
+            upval_t idx = VM_ARGN(*(S.pc + i / sizeof(instr_t)),
+                                  i % sizeof(instr_t));
+            func->upvals[i] = REG(idx);
+        }
+        S.pc += INTDIV_CEIL(1 + nupvals, sizeof(instr_t));
+        break;
 
       default:
         IMPOSSIBLE("unrecognized or unimplemented opcode: %u", OP);

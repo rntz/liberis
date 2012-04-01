@@ -48,6 +48,7 @@ enum builtin_op {
 #define VM_ARG1(instr)        ((arg_t)((instr) >> 8))
 #define VM_ARG2(instr)        ((arg_t)((instr) >> 16))
 #define VM_ARG3(instr)        ((arg_t)((instr) >> 24))
+#define VM_ARGN(instr, n)     ((arg_t)((instr) >> (8*(n))))
 #define VM_LONGARG2(instr)    ((longarg_t)((instr) >> 16))
 
 

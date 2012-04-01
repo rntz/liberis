@@ -13,6 +13,10 @@
 
 #define ARRAY_LEN(x) (sizeof(x)/sizeof((x)[0]))
 
+/* Useful for calculating eg. how many buckets of size "denom" are needed to
+ * hold "num" quantity of water. */
+#define INTDIV_CEIL(num, denom) (((num) + (denom) - 1) / (denom))
+
 /* Size of a member of a struct or union. */
 #define membersize(type, mem) sizeof(((type*)NULL)->mem)
 
