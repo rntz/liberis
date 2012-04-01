@@ -65,6 +65,7 @@ typedef struct {
 
 typedef struct {
     frame_tag_t tag;
+    c_closure_t *func;
 } c_call_frame_t;
 
 typedef struct {

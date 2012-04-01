@@ -80,6 +80,13 @@ SHAPE(closure) {
     val_t upvals[];
 };
 
+SHAPE(c_closure) {
+    eris_c_func_t func;
+    void *data;
+    size_t num_upvals;
+    val_t upvals[];
+};
+
 /* TODO: decide re unicode & encoding stuff. */
 SHAPE(string) {
     size_t len;
