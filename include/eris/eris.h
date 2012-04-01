@@ -90,6 +90,13 @@ void eris_push_upval(eris_frame_t *S, eris_idx_t upval_idx);
  */
 typedef eris_idx_t (*eris_c_func_t)(eris_frame_t*, void*);
 
+/* TODO:
+ *
+ * How do variadic C callbacks work? How do C callbacks check they have received
+ * the right number of arguments? Should they explicitly specify an arity when
+ * constructing them?
+ */
+
 /* Pushes a function with an empty closure (no upvals). */
 void eris_push_func(eris_frame_t *S, eris_c_func_t func, void *data);
 
