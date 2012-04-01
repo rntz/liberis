@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include <gmp.h>
+
 #include <eris/eris.h>
 
 /* Different instructions take different numbers of bytes to represent. However,
@@ -22,7 +24,6 @@ typedef  uint16_t   longarg_t;
 typedef   int16_t   jump_offset_t;
 
 typedef uintptr_t   val_t;
-typedef  uint32_t   int_t;
 typedef   uint8_t   tag_t;
 typedef uintptr_t   hash_t;
 
@@ -52,6 +53,19 @@ typedef struct {
 
 /* Types after this point should only exist embedded inside of an obj_t. */
 extern shape_t eris_shape_nil;
+
+typedef uint8_t num_tag_t;
+enum num_tag { SMALL_INT, SMALL_FLOAT, LARGE_RATIO, LARGE_FLOAT };
+
+SHAPE(num) {
+    num_tag_t tag;
+    union {
+        intptr_t small_int;
+        double small_float;
+        mpq_t large_ratio;
+        mpf_t large_float;
+    };
+};
 
 SHAPE(proto) {
     instr_t *code;

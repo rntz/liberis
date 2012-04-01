@@ -6,6 +6,7 @@
     }
 
 SHAPE(nil);
+SHAPE(num);
 SHAPE(proto);
 SHAPE(closure);
 SHAPE(string);
