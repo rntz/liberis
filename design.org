@@ -11,48 +11,80 @@
     (don't prevent a var from being gced due to a closure that never uses it)
 
 * Tags
+** Conclusion in brief
+There are a lot of decisions to be made about representation of values and their
+type tags. Current plan is to put the decision off and just represent values as
+pointers to memory blocks with a type header. Go back and optimize later once
+the system is built and working.
 
+** Discussion in full
 Current scheme: (WORDSIZE-1)-bit ints have low bit high. Everything else is a
-pointer to an allocated block with a header tag. This is good if I'm doing
-modulo arithmetic on numbers, because modulo-31 is bearable. But if I'm doing a
-full numeric stack, then other options come to mind.
+pointer to an allocated block with a header tag. This is necessary if I'm doing
+modulo arithmetic on numbers, because anything less than 31-bit arithmetic is
+unbearable. But if I'm doing a full numeric stack, then other options come to
+mind.
 
-In particular, use more than 1 tag bit. I can use at most 3 tag bits on a
-pointer while still being portable to 32-bit systems, which is desirable. With a
-variable-length encoding I could use more tag bits, but the only non-pointer
-values I'm likely to want are small integers (and maybe nil).
+The number of bits I use determines the minimum alignment of allocated objects.
+2 bits = 4 bytes, which is my alignment constraint already on 32-bit systems. 3
+bits = 8 bytes adds some overhead on 32-bit systems but might be worth it. 4
+bits = 16 bytes is probably too much. A variable-length encoding might be
+possible, but ugh what a PITA. Let k be the number of tag bits we eventually
+decide to use.
 
-The immediate problems are:
-1. 3 bits = 8 datatypes, which is probably not enough.
-2. Host program might want to define its own datatypes.
+We'll probably want more than 2^k datatypes, so we use 2^k-1 tags for common
+types and reserve one tag for uncommon types; we determine the actual type of
+such an object from its header, which is a pointer to type metadata.
 
-Both can be solved in the same fashion: Really important datatypes get a 3-bit
-tag. Otherwise, there is a 3-bit tag for "block with header tag", and the header
-tag is a pointer to type metadata as in current scheme.
+Benefits of this scheme:
+1. Faster type testing. It avoids a memory access, but I'm not sure /how/
+   important that is. In most cases where we check something's type, we're about
+   to be accessing its memory anyway, so further accesses should be cached.
 
-Benefits to this scheme:
-1. Lower memory overhead (eg. conses go from 3-word to 2-word).
-2. Possible GC speedup, since GC can switch on 3-bit tag and special-case the
-   common datatypes. However, could do this with pointer-based scheme as well
-   (though as if/else chain, not switch).
+   OTOH, type-testing is /really/ common. At a wild guess I'd say about once per
+   two instructions.
 
-Disbenefits to it:
+   Exceptions to "we're about to be accessing its memory anyway":
+   - nil check (but this can be made non-memory-accessing even without k-bit
+     tags by making nil a statically-allocated value)
+
+   - builtins, potentially. we could easily have builtins be immediate values.
+
+   Actually, these 2 exceptions suggests a 2-bit encoding:
+   - one tag for fixnum
+   - one tag for builtins
+   - one tag for nil (?)
+   - one tag for everything else
+
+   Might want a tag for closures, too...
+
+2. (DISCREDITED) Lower memory overhead (eg. conses go from 3-word to 2-word)?
+
+   However, our GC needs to store metadata bits. A type header is the perfect
+   place; even if it's a pointer, we can use the lower 2 bits to store the GC
+   metadata (simple copying and mark/sweep collectors need only 1 bit).
+   Moreover, a mark/sweep collector _needs_ type (or at least size) headers in
+   order to scan the heap during the "sweep" phase.
+
+3. (DISCREDITED) GC speedup, since GC can switch on 3-bit tag and special-case
+   the common datatypes. However, could do this with pointer-based scheme as
+   well (though as if/else chain, not switch). Is this really the time-consuming
+   part of GC? Probably not.
+
+Disbenefits of it:
 1. Need full numeric stack. 29-bit 2's complement arithmetic is not bearable.
    However, probably wanted this anyway.
 2. Slight extra overhead on dealing with "uncommon" types.
 3. It makes the "undefined" state of cells more interesting, and possibly less
    efficient, to encode.
 
-Conclusion: Probably a good idea.
-
-# What tags would we use?
+# What tags would we use if we had 8 tags?
 1. Fixnum
 2. Closure
 3. Builtin
 4. Cons
-5. ? Symbol
+5. ? Nil
 6. ? String
-7. ? Boxed number
+7. ? Symbol
 8. Tagged object (? or nil if null)
 
 Unfortunately this is a decision that would optimally be made with the aid of
@@ -70,9 +102,9 @@ Candidates:
   Alternatively, nil could have the 3-bit tag of a type that doesn't contain it,
   but whose content is a pointer (not an immediate), and be a NULL pointer. This
   puts extra overhead on the usage of that type, though. Likely types:
-  - cons (nil is "empty list"; punnery on use of conses for lists)
-  - symbol (is nil a symbol?)
   - tagged object (if we're gonna have extra overhead, put it on the uncommon case)
+  - symbol (is nil a symbol?)
+  - cons (nil is "empty list"; punnery on use of conses for lists)
 
 - *String*
   String manipulation is fairly common.
