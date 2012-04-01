@@ -10,6 +10,12 @@
   - Non-naive view of environment capture.
     (don't prevent a var from being gced due to a closure that never uses it)
 
+* General notes
+
+Rips off Lua pretty heavily. Register machine, each function indicates how many
+registers it needs, registers implicitly on a stack, calling function shifts
+register window
+
 * Tags
 ** Conclusion in brief
 There are a lot of decisions to be made about representation of values and their
@@ -132,12 +138,6 @@ compiler knows how to handle. Code involving "cons" doesn't get compiled
 specially - it's still a call through a cell, so "cons" can be
 overridden/redefined. But when we actually run the call instruction, it simply
 notes that the "function" value is a builtin, and switches on it.
-
-* General notes
-
-Rips off Lua pretty heavily. Register machine, each function indicates how many
-registers it needs, registers implicitly on a stack, calling function shifts
-register window
 
 * Upvals & closures
 
