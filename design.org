@@ -214,49 +214,6 @@ all indirect (through function pointers or "cells").
 
 TODO: Explain cells.
 
-* Precise GC support
-
-Tag bits for now.
-_Try_ to make the C API generic enough to work with any.
-
-Options:
-1. tag bits. sml does this.
-
-   pros:
-   + pretty efficient, space- & time-wise
-
-   cons:
-   + not strictly portable (but damn close).
-   + fucking the semantics of your language for its implementation.
-     ie. "ugh 31 bit ints."
-
-2. gc metadata: structure tags(&maps?), register&stack maps. makes function call
-   interface "interesting".
-
-   pros: the best.
-
-   cons:
-   + hardest to implement.
-   + nigh-impossible to use from a dynamically-typed source language.
-     consider (\x. f x)
-
-3. large values (ugh large values). lua does this.
-
-   pros:
-   + can make doubles immediate too.
-
-   cons:
-   + memory inflation.
-   + slow?
-
-4. no immediate numbers. python does this.
-
-   pros:
-   + balls simple.
-
-   cons:
-   + slooooow (esp if you don't cache small ints)
-
 * Weak refs and finalizers
 
 We can implement both weak references and finalizers without too much difficulty
