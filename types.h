@@ -54,6 +54,7 @@ typedef struct {
 
 /* Types after this point should only exist embedded inside of an obj_t. */
 extern shape_t eris_shape_nil;
+extern val_t eris_nil;
 
 /* TODO: complex numbers. */
 typedef uint8_t num_tag_t;
