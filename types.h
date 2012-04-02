@@ -26,6 +26,7 @@ typedef   int16_t   jump_offset_t;
 typedef uintptr_t   val_t;
 typedef   uint8_t   tag_t;
 typedef uintptr_t   hash_t;
+typedef   uint8_t   builtin_op_t;
 
 typedef   uint8_t   reg_t;
 typedef   uint8_t   nargs_t;
@@ -65,6 +66,10 @@ SHAPE(num) {
         mpq_t v_mpq;
         double v_double;
     };
+};
+
+SHAPE(builtin) {
+    builtin_op_t op;
 };
 
 SHAPE(proto) {

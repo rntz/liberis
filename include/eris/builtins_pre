@@ -1,0 +1,10 @@
+/* Clients of liberis: DO NOT INCLUDE THIS HEADER UNDER ANY CIRCUMSTANCES.
+ *
+ * While we ship this header publicly, the only thing about it guaranteed to be
+ * constant between compatible version of eris is the ordering of the builtins
+ * contained herein.
+ */
+
+#ifndef ERIS_BUILTIN
+#error "eris/builtins.h included with ERIS_BUILTIN undefined"
+#endif

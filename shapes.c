@@ -7,6 +7,7 @@
 
 SHAPE(nil);
 SHAPE(num);
+SHAPE(builtin);
 SHAPE(proto);
 SHAPE(closure);
 SHAPE(c_closure);

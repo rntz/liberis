@@ -16,6 +16,12 @@ typedef intptr_t eris_int_t;
 typedef uintptr_t eris_uint_t;
 typedef double eris_float_t;
 
+typedef enum {
+#define ERIS_BUILTIN(name) ERIS_##name,
+#include <eris/builtins.h>
+#undef ERIS_BUILTIN
+} eris_builtin_t;
+
 /* Creating vms, threads, and states. */
 eris_vm_t *eris_vm_new(void);   /* can return NULL. */
 void eris_vm_destroy(eris_vm_t *vm);
@@ -54,6 +60,10 @@ void eris_extend(eris_frame_t *S, size_t num);
 void eris_move(eris_frame_t *S, eris_idx_t dst, eris_idx_t src);
 void eris_copy(eris_frame_t *S, eris_idx_t dst, eris_idx_t src, size_t num);
 
+/* Returns the total number of slots, ie. the index one greater than the
+ * maximum. */
+eris_idx_t eris_num_slots(eris_frame_t *S);
+
 /* Pushes the value in slot `idx'. */
 void eris_dup(eris_frame_t *S, eris_idx_t idx);
 
@@ -69,6 +79,8 @@ void eris_cons(eris_frame_t *S);
  * the stack (slot 0).
  */
 void eris_call(eris_frame_t *S, eris_idx_t func_idx, size_t nargs);
+
+void eris_builtin(eris_frame_t *S, eris_builtin_t builtin, size_t nargs);
 
 
 /* Pushing data onto stack. */
@@ -86,7 +98,7 @@ void eris_push_symbol(eris_frame_t *S, size_t len, const char *data);
 void eris_push_upval(eris_frame_t *S, eris_idx_t upval_idx);
 
 /* The type of a C function callback. Takes a frame and an arbitrary
- * user-supplied pointer. Returns the index on the stack of its return value.
+ * user-supplied pointer. Returns the index of the return value's stack slot.
  */
 typedef eris_idx_t (*eris_c_func_t)(eris_frame_t*, void*);
 
@@ -126,17 +138,18 @@ bool eris_check_string_len(eris_frame_t *S, eris_idx_t idx, size_t *lenp);
 ERIS_WARN_UNUSED_RESULT
 bool eris_check_symbol_len(eris_frame_t *S, eris_idx_t idx, size_t *lenp);
 
-/* Returns "false" if either the value at `idx' isn't a number or if it can't be
- * represented in an eris_int_t.
+/* Returns "false" if either the value in slot `idx' isn't a number or if it
+ * can't be represented in an eris_int_t.
  */
 ERIS_WARN_UNUSED_RESULT
 bool eris_check_int(eris_frame_t *S, eris_idx_t idx, eris_int_t *out);
 
 /* TODO: floating-point, rational, and arbitrary-precision number getters. */
 
-/* The "eris_get_*" functions cause exceptional control flow if index accessed
- * does not have an object of the appropriate type in it.
+/* The "eris_get_*" functions cause exceptional control flow if the slot
+ * accessed does not contain an appropriately-typed object.
  */
+
 /* Returns the size of the string. If this is > `len' then the string was
  * truncated to fit in `buf'. DOES NOT NULL-TERMINATE `buf'. Suggest using
  * eris_check_string_len to determine how large to make `buf'.

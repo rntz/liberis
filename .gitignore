@@ -1,8 +1,8 @@
 *.dep
 *.o
 /eris.tar.*
-/enum_*.h
 /rvmi
 /rvmi.s
 /rvmi.rodata
 /flags
+/include/eris/builtins.h

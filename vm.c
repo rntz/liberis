@@ -39,35 +39,63 @@ void do_precall(vm_state_t *S, closure_t *func,
 }
 
 static inline
-void do_call(vm_state_t *S, closure_t *func,
-             reg_t offset, nargs_t nargs)
+void do_call(vm_state_t *S, val_t funcv, reg_t offset, nargs_t nargs)
 {
-    do_precall(S, func, offset, nargs);
+    obj_t *obj = VAL_OBJ(funcv);
+    shape_t *tag = obj->tag;
 
-    /* Push return frame on control stack, which grows down. */
-    call_frame_t *frame = ((call_frame_t*) S->frames) - 1;
-    S->frames = frame;
-    frame->tag = FRAME_CALL;
-    frame->pc = S->pc;
-    frame->func = S->func;
+    if (LIKELY(tag == SHAPE_TAG(closure))) {
+        closure_t *func = OBJ_CONTENTS(closure, obj);
+        do_precall(S, func, offset, nargs);
 
-    /* Jump into the function. */
-    S->func = func;
-    S->pc = S->func->proto->code;
-    S->regs += offset;
+        /* Push return frame on control stack, which grows down. */
+        call_frame_t *frame = ((call_frame_t*) S->frames) - 1;
+        S->frames = frame;
+        frame->tag = FRAME_CALL;
+        frame->pc = S->pc;
+        frame->func = S->func;
+
+        /* Jump into the function. */
+        S->func = func;
+        S->pc = S->func->proto->code;
+        S->regs += offset;
+    }
+    else if (LIKELY(tag == SHAPE_TAG(builtin))) {
+        assert(0 && "unimplemented"); /* TODO */
+    }
+    else if (LIKELY(tag == SHAPE_TAG(c_closure))) {
+        assert(0 && "unimplemented"); /* TODO */
+    }
+    else {
+        eris_type_error("invalid function object");
+    }
 }
 
 static inline
-void do_tailcall(vm_state_t *S, closure_t *func,
-                 reg_t offset, nargs_t nargs)
+void do_tailcall(vm_state_t *S, val_t funcv, reg_t offset, nargs_t nargs)
 {
-    do_precall(S, func, offset, nargs);
+    obj_t *obj = VAL_OBJ(funcv);
+    shape_t *tag = obj->tag;
 
-    /* Jump into the function. */
-    S->func = func;
-    S->pc = S->func->proto->code;
-    /* Move down the arguments into appropriate slots. */
-    memmove(S->regs, S->regs + offset, sizeof(val_t) * nargs);
+    if (LIKELY(tag == SHAPE_TAG(closure))) {
+        closure_t *func = OBJ_CONTENTS(closure, obj);
+        do_precall(S, func, offset, nargs);
+
+        /* Jump into the function. */
+        S->func = func;
+        S->pc = S->func->proto->code;
+        /* Move down the arguments into appropriate slots. */
+        memmove(S->regs, S->regs + offset, sizeof(val_t) * nargs);
+    }
+    else if (LIKELY(tag == SHAPE_TAG(builtin))) {
+        assert(0 && "unimplemented"); /* TODO */
+    }
+    else if (LIKELY(tag == SHAPE_TAG(c_closure))) {
+        assert(0 && "unimplemented"); /* TODO */
+    }
+    else {
+        eris_type_error("invalid function object");
+    }
 }
 
 static inline
@@ -170,8 +198,8 @@ void eris_vm_run(vm_state_t *state)
          *  CALL_FUNC gets the closure being called for CALL and TAILCALL ops.
          *  CALL_REG_FUNC does the same for CALL_REG and TAILCALL_REG.
          */
-#define CELL_FUNC VAL_AS_CLOSURE(CELL(ARG1))
-#define REG_FUNC VAL_AS_CLOSURE(REG(ARG1))
+#define CELL_FUNC CELL(ARG1)
+#define REG_FUNC REG(ARG1)
 
       case OP_CALL_CELL:
         do_call(&S, CELL_FUNC, ARG2, ARG3);

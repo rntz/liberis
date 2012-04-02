@@ -7,6 +7,7 @@ INCLUDE=$(PREFIX)/include
 
 # Defaults.
 CC=gcc
+CPP=$(CC) -E
 CCLD=$(CC)
 CFLAGS+= -std=c99 -Wall -Wextra -Werror -pipe
 # LIBS is defined in Makefile.
