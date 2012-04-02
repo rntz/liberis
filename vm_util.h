@@ -14,7 +14,8 @@
 #define VAL_OBJ(val) ((obj_t*) val)
 
 #define OBJ_CONTENTS(shape, obj) ((SHAPE_TYPE(shape)*)((obj)+1))
-#define CONTENTS_OBJ(val) (((obj_t*)(val)) - 1)
+#define CONTENTS_OBJ(ptr) (((obj_t*)(ptr)) - 1)
+#define CONTENTS_VAL(ptr) OBJ_VAL(CONTENTS_OBJ(ptr))
 
 #define OBJ_ISA(shape, obj) ((obj)->tag == SHAPE_TAG(shape))
 #define OBJ_IS_NIL(obj) OBJ_ISA(nil, obj)
