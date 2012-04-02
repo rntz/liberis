@@ -67,7 +67,7 @@ void do_call(vm_state_t *S, val_t funcv, reg_t offset, nargs_t nargs)
         switch (builtin->op) {
 
             /* Expandos for builtins.h */
-#define BUILTIN(name, code) case CAT(BOP_,name): { code } break;
+#define BUILTIN(name, ...) case CAT(BOP_,name): { __VA_ARGS__ } break;
 #define NARGS nargs
 #define ARG(i) S->regs[offset+(i)]
 #define DEST S->regs[offset]

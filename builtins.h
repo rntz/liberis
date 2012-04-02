@@ -2,12 +2,12 @@
  * defined to something that will do a useful thing for each builtin definition.
  * As such, it has no include guards.
  *
- * BUILTIN(name, code)
+ * BUILTIN(name, ...)
  *
  * - name: the name of the builtin. all caps, suitable for use in a macro name.
  *
- * - code: code that evaluates the builtin. expects the following macros to be
- *   defined:
+ * - __VA_ARGS__: code that evaluates the builtin. expects the following macros
+ *   to be defined:
  *
  *   - NARGS: number of arguments
  *   - ARG(i): ith argument

@@ -35,7 +35,7 @@ enum op {
 };
 
 enum builtin_op {
-#define BUILTIN(name, code) BOP_##name,
+#define BUILTIN(name, ...) BOP_##name,
 #include "builtins.h"
 #undef BUILTIN
 };

@@ -34,7 +34,7 @@ eris.tar.bz2: $(TAR_FILES)
 include/eris/builtins.h: builtins.h include/eris/builtins_pre flags
 	@echo "   GEN	$@"
 	cat include/eris/builtins_pre > $@
-	$(CPP) $(CFLAGS) -D'BUILTIN(x,y)=ERIS_BUILTIN(x)' $< -o - |\
+	$(CPP) $(CFLAGS) -D'BUILTIN(x,...)=ERIS_BUILTIN(x)' $< -o - |\
 	    sed '/^#\|^$$/d' >> $@
 
 # Disassembly targets.
