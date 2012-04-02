@@ -19,7 +19,8 @@
  *   TODO: TYPE_ERROR (and maybe ARITY_ERROR?) should take args to indicate what
  *   failed.
  *
- *   TODO: list headers we expect to be included for code to work.
+ *   Headers that must be included for code to work:
+ *   - vm_util.h
  */
 
 #ifndef BUILTIN
@@ -27,9 +28,15 @@
 #endif
 
 /* Conses */
-BUILTIN(CONS, UNIMPLEMENTED)
-BUILTIN(CAR, UNIMPLEMENTED)
-BUILTIN(CDR, UNIMPLEMENTED)
+BUILTIN(CONS,
+        cons_t *cons = MAKE(cons);
+        cons->car = ARG(0);
+        cons->cdr = ARG(1);
+        DEST = CONTENTS_VAL(cons);
+    )
+
+BUILTIN(CAR, cons_t *cons = VAL_AS(cons, ARG(0)); DEST = cons->car;)
+BUILTIN(CDR, cons_t *cons = VAL_AS(cons, ARG(0)); DEST = cons->cdr;)
 
 /* Strings */
 BUILTIN(STR_CAT, UNIMPLEMENTED) /* variadic */
