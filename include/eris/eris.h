@@ -9,6 +9,7 @@
 #include <eris/portability.h>
 
 typedef struct eris_vm eris_vm_t;
+/* TODO: better name? */
 typedef struct eris_thread eris_thread_t;
 typedef struct eris_frame eris_frame_t;
 typedef size_t eris_idx_t;
@@ -29,7 +30,7 @@ void eris_vm_destroy(eris_vm_t *vm);
 eris_thread_t *eris_thread_new(eris_vm_t *vm); /* can return NULL. */
 void eris_thread_destroy(eris_thread_t *thread);
 
-eris_frame_t *eris_frame_begin(eris_thread_t *thread);
+eris_frame_t *eris_frame_begin(eris_thread_t *thread); /* can return NULL. */
 void eris_frame_end(eris_frame_t *frame);
 
 eris_thread_t *eris_frame_thread(eris_frame_t *frame);

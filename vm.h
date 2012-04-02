@@ -63,6 +63,9 @@ enum frame_tag {
 /* FIXME: we currently assume that call_frame_t and c_call_frame_t have the same
  * alignment constraints. (Otherwise the naive way we do frame pointer math
  * doesn't work out.)
+ *
+ * This seems like a reasonable assumption, given that they contain pointers,
+ * which are generally aligned most strictly. Should check this, though.
  */
 typedef struct {
     frame_tag_t tag;
@@ -81,9 +84,22 @@ typedef struct {
     val_t *regs;
     /* Stack of control/return frames. This stack grows down. Points to the tag
      * of the last frame pushed (the frame we return into).
+     *
+     * TODO: having this point to our own frame might be better, since only the
+     * instruction pointer need change between different calls, and this results
+     * in less writes to the control stack if we call more than once.
+     *
+     * Also, it might be _necessary_ for this to point to our own frame if
+     * runtime functions don't get a pointer to this structure, which they might
+     * not because:
+     *
+     *   1. can end up calling into eris runtime from C API as well.
+     *   2. this structure ideally is held in registers only; passing a pointer
+     *   to it fucks that up.
      */
     void *frames;
     closure_t *func;
+    eris_thread_t *thread;
 } vm_state_t;
 
 
