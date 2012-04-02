@@ -65,7 +65,7 @@ SHAPE(num) {
         intptr_t v_intptr;
         mpq_t v_mpq;
         double v_double;
-    };
+    } data;
 };
 
 SHAPE(builtin) {
