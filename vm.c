@@ -44,6 +44,7 @@ void do_call(vm_state_t *S, val_t funcv, reg_t offset, nargs_t nargs)
     obj_t *obj = VAL_OBJ(funcv);
     shape_t *tag = obj->tag;
 
+    /* Calling closures */
     if (LIKELY(tag == SHAPE_TAG(closure))) {
         closure_t *func = OBJ_CONTENTS(closure, obj);
         do_precall(S, func, offset, nargs);
@@ -60,12 +61,39 @@ void do_call(vm_state_t *S, val_t funcv, reg_t offset, nargs_t nargs)
         S->pc = S->func->proto->code;
         S->regs += offset;
     }
+    /* Calling builtins */
     else if (LIKELY(tag == SHAPE_TAG(builtin))) {
-        assert(0 && "unimplemented"); /* TODO */
+        builtin_t *builtin = OBJ_CONTENTS(builtin, obj);
+        switch (builtin->op) {
+
+            /* Expandos for builtins.h */
+#define BUILTIN(name, code) case CAT(BOP_,name): { code } break;
+#define NARGS nargs
+#define ARG(i) S->regs[offset+(i)]
+#define DEST S->regs[offset]
+            /* TODO: better error messages */
+#define ARITY_ERROR() eris_arity_error("builtin")
+#define TYPE_ERROR() eris_type_error("builtin")
+#define UNIMPLEMENTED assert(0 && "builtin unimplemented");
+
+#include "builtins.h"
+
+#undef UNIMPLEMENTED
+#undef TYPE_ERROR
+#undef ARITY_ERROR
+#undef DEST
+#undef ARG
+#undef NARGS
+#undef BUILTIN
+
+          default: IMPOSSIBLE("invalid builtin: %d", builtin->op);
+        }
     }
+    /* Calling C closures */
     else if (LIKELY(tag == SHAPE_TAG(c_closure))) {
         assert(0 && "unimplemented"); /* TODO */
     }
+    /* Calling everything else */
     else {
         eris_type_error("invalid function object");
     }
