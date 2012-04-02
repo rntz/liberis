@@ -60,15 +60,12 @@ void eris_extend(eris_frame_t *S, size_t num);
 void eris_move(eris_frame_t *S, eris_idx_t dst, eris_idx_t src);
 void eris_copy(eris_frame_t *S, eris_idx_t dst, eris_idx_t src, size_t num);
 
-/* Returns the total number of slots, ie. the index one greater than the
- * maximum. */
-eris_idx_t eris_num_slots(eris_frame_t *S);
-
 /* Pushes the value in slot `idx'. */
 void eris_dup(eris_frame_t *S, eris_idx_t idx);
 
-/* Pops y, pops x; pushes (cons x y). Note the ordering of the pops. */
-void eris_cons(eris_frame_t *S);
+/* Returns the total number of slots, ie. the index one greater than the
+ * maximum. */
+eris_idx_t eris_num_slots(eris_frame_t *S);
 
 /* Args are on the top of the stack in reverse order. That is, the first arg is
  * at index nargs-1, the second at nargs-2, ..., the last at 0 (the top of the
@@ -80,6 +77,7 @@ void eris_cons(eris_frame_t *S);
  */
 void eris_call(eris_frame_t *S, eris_idx_t func_idx, size_t nargs);
 
+/* Like eris_call, but calls a builtin. */
 void eris_builtin(eris_frame_t *S, eris_builtin_t builtin, size_t nargs);
 
 
