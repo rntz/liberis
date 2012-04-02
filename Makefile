@@ -2,7 +2,7 @@ EXES=rvmi
 SOURCES=rvmi.c runtime.c shapes.c vm.c
 
 TAR_FILES=$(SOURCES) \
-	misc.h runtime.h types.h vm.h vm_util.h builtins.h portability.h \
+	misc.h runtime.h types.h vm.h vm_util.h builtins.h portability.h api.h \
 	include/eris/eris.h include/eris/portability.h \
 	README include/README Makefile config.mk depclean \
 	include/eris/builtins_pre
@@ -11,7 +11,7 @@ TAR_FILES=$(SOURCES) \
 GENFILES=include/eris/builtins.h
 
 # Libraries we depend on.
-LIBS=gmp slz
+LIBS=gmp slz Judy
 
 # Make "all" default target.
 .PHONY: all
