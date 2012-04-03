@@ -192,9 +192,13 @@ void eris_vm_run(vm_state_t *state)
         break;
 
       case OP_LOAD_INT:
-        /* Tag the integer appropriately. */
-        /* TODO: factor out into macros. */
-        DEST = ((val_t)LONGARG2 << 1) | 1;
+        /* Allocating; update control frame IP. */
+        S.frame->ip = S.ip;
+        obj_t *obj = NEW(num);
+        num_t *num = OBJ_CONTENTS(num, obj);
+        num->tag = NUM_INTPTR;
+        num->data.v_intptr = LONGARG2;
+        DEST = OBJ_VAL(obj);
         ++S.ip;
         break;
 

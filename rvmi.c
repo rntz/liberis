@@ -86,18 +86,24 @@ void poison(void *x, uint32_t word, size_t size) {
 
 int main(int argc, char **argv)
 {
+#define NUM_CONTS 20
     val_t stack[100];
-    call_frame_t cont[20];
+    call_frame_t cont[NUM_CONTS];
 
     poison(stack, 0xdeadbeef, sizeof(stack));
     poison(cont, 0xcafebabe, sizeof(cont));
 
     obj_t *bar = make_bar();
 
+    /* Initialize frame. */
+    call_frame_t *frame = &cont[NUM_CONTS-1];
+    frame->tag = FRAME_CALL;
+    frame->func = OBJ_AS_CLOSURE(bar);
+
     vm_state_t state = ((vm_state_t) {
             .ip = bar_code,
             .regs = stack,
-            .frame = cont,
+            .frame = frame,
             .func = OBJ_AS_CLOSURE(bar)
     });
 
