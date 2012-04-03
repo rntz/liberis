@@ -9,7 +9,7 @@ void eris_vdie(const char *fmt, va_list ap)
 {
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
-    exit(1);
+    abort();
 }
 
 void eris_die(const char *fmt, ...)
