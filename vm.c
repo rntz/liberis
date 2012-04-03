@@ -23,14 +23,13 @@
 /* Helper functions for call instructions. */
 /* Does arity checking and conses excess variadic arguments. */
 static inline
-void do_precall(vm_state_t *S, closure_t *func,
-                reg_t offset, nargs_t nargs)
+void do_precall(vm_state_t *S, closure_t *func, reg_t offset, nargs_t nargs)
 {
     if (LIKELY(nargs == func->proto->num_args))
         return;
 
     if (LIKELY(func->proto->variadic)) {
-        eris_die("variadic function calls unimplemented");
+        eris_die("variadic function calls unimplemented"); /* TODO */
     }
     else {
         eris_arity_error("arity mismatch");
@@ -49,16 +48,21 @@ void do_call(vm_state_t *S, val_t funcv, reg_t offset, nargs_t nargs)
         closure_t *func = OBJ_CONTENTS(closure, obj);
         do_precall(S, func, offset, nargs);
 
-        /* Push return frame on control stack, which grows down. */
-        call_frame_t *frame = ((call_frame_t*) S->frames) - 1;
-        S->frames = frame;
-        frame->tag = FRAME_CALL;
-        frame->pc = S->pc;
-        frame->func = S->func;
+        /* TODO: think very hard about what happens on control stack
+         * overflow. */
+
+        /* Update our IP on control stack, so callee returns correctly. */
+        S->frame->ip = S->ip;
+
+        /* Push callee's stack frame. Remember, control stack grows down. */
+        --S->frame;
+        S->frame->tag = FRAME_CALL;
+        S->frame->func = func;
+        /* No need to set frame's IP; callee will do that as necessary. */
 
         /* Jump into the function. */
         S->func = func;
-        S->pc = S->func->proto->code;
+        S->ip = S->func->proto->code;
         S->regs += offset;
     }
     /* Calling builtins */
@@ -109,9 +113,12 @@ void do_tailcall(vm_state_t *S, val_t funcv, reg_t offset, nargs_t nargs)
         closure_t *func = OBJ_CONTENTS(closure, obj);
         do_precall(S, func, offset, nargs);
 
-        /* Jump into the function. */
-        S->func = func;
-        S->pc = S->func->proto->code;
+        /* Jump into the function, updating our control frame appropriately. */
+        S->func = S->frame->func = func; /* update frame's func */
+        S->ip = S->func->proto->code;
+        /* No need to update frame's tag; already has appropriate value.
+         * No need to update frame's IP; callee will do that as necessary. */
+
         /* Move down the arguments into appropriate slots. */
         memmove(S->regs, S->regs + offset, sizeof(val_t) * nargs);
     }
@@ -130,16 +137,16 @@ static inline
 void do_cond(vm_state_t *S, bool cond)
 {
     /* The instruction after a conditional is required to be a jump. */
-    assert (VM_OP(S->pc[1]) == OP_JUMP);
+    assert (VM_OP(S->ip[1]) == OP_JUMP);
 
     if (cond)
         /* Skip next instruction. */
-        S->pc += 2;
+        S->ip += 2;
     else
-        /* Make the following jump. (1 + ...) because the current pc is 1
+        /* Make the following jump. (1 + ...) because the current IP is 1
          * behind that of the jump instruction.
          */
-        S->pc += 1 + (jump_offset_t) VM_LONGARG2(*(S->pc + 1));
+        S->ip += 1 + (jump_offset_t) VM_LONGARG2(*(S->ip + 1));
 }
 
 
@@ -164,7 +171,7 @@ void eris_vm_run(vm_state_t *state)
      * follow a label or case. */
   begin:
     (void) 0;
-    const instr_t instr = *S.pc;
+    const instr_t instr = *S.ip;
 
     /* Use these macros only if their value is to be used only once. */
 #define OP   VM_OP(instr)
@@ -181,24 +188,24 @@ void eris_vm_run(vm_state_t *state)
     switch ((enum op) OP) {
       case OP_MOVE:
         DEST = REG(ARG2);
-        ++S.pc;
+        ++S.ip;
         break;
 
       case OP_LOAD_INT:
         /* Tag the integer appropriately. */
         /* TODO: factor out into macros. */
         DEST = ((val_t)LONGARG2 << 1) | 1;
-        ++S.pc;
+        ++S.ip;
         break;
 
       case OP_LOAD_UPVAL:
         DEST = UPVAL(ARG2);
-        ++S.pc;
+        ++S.ip;
         break;
 
       case OP_LOAD_CELL:
         DEST = CELL(ARG2);
-        ++S.pc;
+        ++S.ip;
         break;
 
 
@@ -257,14 +264,15 @@ void eris_vm_run(vm_state_t *state)
          * appropriate modulo arithmetic, and if gcc & clang are smart enough
          * this will compile into a nop on x86(-64). Should test this, though.
          */
-        S.pc += (jump_offset_t) LONGARG2;
+        S.ip += (jump_offset_t) LONGARG2;
         break;
 
       case OP_RETURN: (void) 0;
         /* Put the return value where it ought to be. */
         REG(0) = REG(ARG1);
 
-        frame_tag_t frame_tag = *(frame_tag_t*) S.frames;
+        ++S.frame;              /* pop control stack (it grows down) */
+        frame_tag_t frame_tag = *(frame_tag_t*) S.frame;
         switch ((enum frame_tag) EXPECT_LONG(frame_tag, FRAME_CALL)) {
           case FRAME_CALL: break;
             /* C calls inevitably come through our API, so the API function that
@@ -273,17 +281,14 @@ void eris_vm_run(vm_state_t *state)
           default: IMPOSSIBLE("unrecognized or unimplemented frame tag: %u",
                               frame_tag);
         }
-
-        /* Pop the control stack (remember, the control stack grows down). */
-        call_frame_t *frame;
-        S.frames = (frame = (call_frame_t*) S.frames) + 1;
+        /* Okay, we're returning into an Eris closure. */
 
         /* We determine how far to pop the stack by looking at the argument
          * offset given in the CALL instruction that set up our frame.
          */
-        S.regs -= VM_ARG2(*frame->pc);
-        S.pc = frame->pc + 1;   /* +1 to skip past the call instr. */
-        S.func = frame->func;
+        S.regs -= VM_ARG2(*S.frame->ip);
+        S.ip = S.frame->ip + 1; /* +1 to skip past the call instr. */
+        S.func = S.frame->func;
         break;
 
       case OP_IF:
@@ -307,24 +312,24 @@ void eris_vm_run(vm_state_t *state)
         /* TODO: carefully consider manually optimizing this. */
 
         /* Actually construct the closure. */
-        ++S.pc;
-        arg_t which_func = VM_ARG0(*S.pc);
+        ++S.ip;
+        arg_t which_func = VM_ARG0(*S.ip);
         func->proto = S.func->proto->local_funcs[which_func];
 
         /* We read the indices from which to populate the new closure's upvals
          * from the instructions following the OP_CLOSE. */
         size_t i = 1;
         for (; i <= nupvals_upvals; ++i) {
-            upval_t idx = VM_ARGN(*(S.pc + i / sizeof(instr_t)),
+            upval_t idx = VM_ARGN(*(S.ip + i / sizeof(instr_t)),
                                   i % sizeof(instr_t));
             func->upvals[i] = S.func->upvals[idx];
         }
         for (; i <= nupvals; ++i) {
-            upval_t idx = VM_ARGN(*(S.pc + i / sizeof(instr_t)),
+            upval_t idx = VM_ARGN(*(S.ip + i / sizeof(instr_t)),
                                   i % sizeof(instr_t));
             func->upvals[i] = REG(idx);
         }
-        S.pc += INTDIV_CEIL(1 + nupvals, sizeof(instr_t));
+        S.ip += INTDIV_CEIL(1 + nupvals, sizeof(instr_t));
         break;
 
       default:

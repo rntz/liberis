@@ -95,9 +95,9 @@ int main(int argc, char **argv)
     obj_t *bar = make_bar();
 
     vm_state_t state = ((vm_state_t) {
-            .pc = bar_code,
+            .ip = bar_code,
             .regs = stack,
-            .frames = cont,
+            .frame = cont,
             .func = OBJ_AS_CLOSURE(bar)
     });
 

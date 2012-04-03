@@ -69,7 +69,7 @@ enum frame_tag {
  */
 typedef struct {
     frame_tag_t tag;
-    instr_t *pc;
+    instr_t *ip;
     closure_t *func;
 } call_frame_t;
 
@@ -79,25 +79,21 @@ typedef struct {
 } c_call_frame_t;
 
 typedef struct {
-    instr_t *pc;
+    instr_t *ip;
     /* Index into our frame on the stack of registers. This stack grows up. */
     val_t *regs;
-    /* Stack of control/return frames. This stack grows down. Points to the tag
-     * of the last frame pushed (the frame we return into).
+    /* Stack of control/return frames. This stack grows down. Points to _our_
+     * control frame, just below the frame of the function we return into. Note
+     * that our control frame's IP only needs to be brought up-to-date
+     * immediately before either:
      *
-     * TODO: having this point to our own frame might be better, since only the
-     * instruction pointer need change between different calls, and this results
-     * in less writes to the control stack if we call more than once.
+     * 1. a (non-TAIL) CALL instr (so that it knows where to return to)
      *
-     * Also, it might be _necessary_ for this to point to our own frame if
-     * runtime functions don't get a pointer to this structure, which they might
-     * not because:
-     *
-     *   1. can end up calling into eris runtime from C API as well.
-     *   2. this structure ideally is held in registers only; passing a pointer
-     *   to it fucks that up.
+     * 2. the instruction triggers GC (so that precise GC based on IP works). of
+     *    course, we handle this conservatively and update whenever we /might/
+     *    trigger GC (eg. when we heap-allocate).
      */
-    void *frames;
+    call_frame_t *frame;
     closure_t *func;
     eris_thread_t *thread;
 } vm_state_t;
