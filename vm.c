@@ -37,6 +37,36 @@ void do_precall(vm_state_t *S, closure_t *func, reg_t offset, nargs_t nargs)
     (void) S; (void) offset;    /* unused */
 }
 
+/* TODO: is inlining this function N times, where N is the number of call
+ * instructions we have (currently 4), really a good idea? But how can we not,
+ * if we want the vm_state_t to be in regs?
+ */
+static inline
+void do_builtin(vm_state_t *S, obj_t *obj, reg_t offset, nargs_t nargs)
+{
+    switch (OBJ_CONTENTS(builtin, obj)->op) {
+#define BUILTIN(name, ...) case CAT(BOP_,name): { __VA_ARGS__ } break;
+#define NARGS nargs
+#define ARG(i) S->regs[offset+(i)]
+#define DEST S->regs[offset]
+            /* TODO: better error messages */
+#define ARITY_ERROR() eris_arity_error("builtin")
+#define TYPE_ERROR() eris_type_error("builtin")
+#define UNIMPLEMENTED assert(0 && "builtin unimplemented");
+
+#include "builtins.expando"
+
+#undef UNIMPLEMENTED
+#undef TYPE_ERROR
+#undef ARITY_ERROR
+#undef DEST
+#undef ARG
+#undef NARGS
+#undef BUILTIN
+    }
+    (void) nargs;            /* unused due to unimplemented variadic builtins */
+}
+
 static inline
 void do_call(vm_state_t *S, val_t funcv, reg_t offset, nargs_t nargs)
 {
@@ -67,31 +97,7 @@ void do_call(vm_state_t *S, val_t funcv, reg_t offset, nargs_t nargs)
     }
     /* Calling builtins */
     else if (LIKELY(tag == SHAPE_TAG(builtin))) {
-        builtin_t *builtin = OBJ_CONTENTS(builtin, obj);
-        switch (builtin->op) {
-
-            /* Expandos for builtins.expando */
-#define BUILTIN(name, ...) case CAT(BOP_,name): { __VA_ARGS__ } break;
-#define NARGS nargs
-#define ARG(i) S->regs[offset+(i)]
-#define DEST S->regs[offset]
-            /* TODO: better error messages */
-#define ARITY_ERROR() eris_arity_error("builtin")
-#define TYPE_ERROR() eris_type_error("builtin")
-#define UNIMPLEMENTED assert(0 && "builtin unimplemented");
-
-#include "builtins.expando"
-
-#undef UNIMPLEMENTED
-#undef TYPE_ERROR
-#undef ARITY_ERROR
-#undef DEST
-#undef ARG
-#undef NARGS
-#undef BUILTIN
-
-          default: IMPOSSIBLE("invalid builtin: %d", builtin->op);
-        }
+        do_builtin(S, obj, offset, nargs);
     }
     /* Calling C closures */
     else if (LIKELY(tag == SHAPE_TAG(c_closure))) {
@@ -126,7 +132,7 @@ bool do_tailcall(vm_state_t *S, val_t funcv, reg_t offset, nargs_t nargs)
         return true;           /* no OP_RETURN needed */
     }
     else if (LIKELY(tag == SHAPE_TAG(builtin))) {
-        assert(0 && "unimplemented"); /* TODO */
+        do_builtin(S, obj, offset, nargs);
         return false;
     }
     else if (LIKELY(tag == SHAPE_TAG(c_closure))) {
@@ -254,6 +260,11 @@ void eris_vm_run(vm_state_t *state)
         break;
 
       case OP_TAILCALL_CELL:
+        /* We could avoid having do_tailcall return a bool by just requiring
+         * TAILCALL instrs to be followed by RETURN instrs; then do_tailcall can
+         * just increment IP if it wants to run the return instr. I'm not sure
+         * whether this would gain us anything, though.
+         */
         if (do_tailcall(&S, CELL_FUNC, ARG2, ARG3))
             break;
         goto op_return;
