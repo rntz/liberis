@@ -70,7 +70,7 @@ void do_call(vm_state_t *S, val_t funcv, reg_t offset, nargs_t nargs)
         builtin_t *builtin = OBJ_CONTENTS(builtin, obj);
         switch (builtin->op) {
 
-            /* Expandos for builtins.h */
+            /* Expandos for builtins.expando */
 #define BUILTIN(name, ...) case CAT(BOP_,name): { __VA_ARGS__ } break;
 #define NARGS nargs
 #define ARG(i) S->regs[offset+(i)]
@@ -80,7 +80,7 @@ void do_call(vm_state_t *S, val_t funcv, reg_t offset, nargs_t nargs)
 #define TYPE_ERROR() eris_type_error("builtin")
 #define UNIMPLEMENTED assert(0 && "builtin unimplemented");
 
-#include "builtins.h"
+#include "builtins.expando"
 
 #undef UNIMPLEMENTED
 #undef TYPE_ERROR

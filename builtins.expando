@@ -24,7 +24,7 @@
  */
 
 #ifndef BUILTIN
-#error "builtins.h included with BUILTIN undefined"
+#error "builtins.expando included with BUILTIN undefined"
 #endif
 
 /* Conses */

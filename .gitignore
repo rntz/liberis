@@ -5,4 +5,4 @@
 /rvmi.s
 /rvmi.rodata
 /flags
-/include/eris/builtins.h
+/include/eris/builtins.expando

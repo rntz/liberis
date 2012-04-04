@@ -36,7 +36,7 @@ enum op {
 
 enum builtin_op {
 #define BUILTIN(name, ...) BOP_##name,
-#include "builtins.h"
+#include "builtins.expando"
 #undef BUILTIN
 };
 

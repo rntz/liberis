@@ -6,5 +6,5 @@
  */
 
 #ifndef ERIS_BUILTIN
-#error "eris/builtins.h included with ERIS_BUILTIN undefined"
+#error "eris/builtins.expando included with ERIS_BUILTIN undefined"
 #endif

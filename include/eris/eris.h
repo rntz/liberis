@@ -19,7 +19,7 @@ typedef double eris_float_t;
 
 typedef enum {
 #define ERIS_BUILTIN(name) ERIS_##name,
-#include <eris/builtins.h>
+#include <eris/builtins.expando>
 #undef ERIS_BUILTIN
 } eris_builtin_t;
 
