@@ -11,6 +11,10 @@
 #define __has_builtin(x) 0
 #endif
 
+#ifndef __has_attribute
+#define __has_attribute(x) 0
+#endif
+
 /* This macro is used to inform the compiler that a particular point is
  * unreachable. Both clang and gcc use __builtin_unreachable for this purpose.
  *
@@ -21,6 +25,14 @@
 #define UNREACHABLE (__builtin_unreachable())
 #else
 #define UNREACHABLE (assert(0 && "unreachable"))
+#endif
+
+/* FIXME: No idea which gcc version introduced __attribute__(noreturn);
+ * currently assuming they all have it. */
+#if __has_attribute(__noreturn__) || defined __GNUC__
+#define NORETURN __attribute__((__noreturn__))
+#else
+#define NORETURN
 #endif
 
 /* These macros are used to inform the compiler that the boolean expression
