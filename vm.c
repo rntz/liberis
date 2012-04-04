@@ -103,8 +103,10 @@ void do_call(vm_state_t *S, val_t funcv, reg_t offset, nargs_t nargs)
     }
 }
 
+/* Returns false iff we should next execute an OP_RETURN to simulate a
+ * tailcall. */
 static inline
-void do_tailcall(vm_state_t *S, val_t funcv, reg_t offset, nargs_t nargs)
+bool do_tailcall(vm_state_t *S, val_t funcv, reg_t offset, nargs_t nargs)
 {
     obj_t *obj = VAL_OBJ(funcv);
     shape_t *tag = obj->tag;
@@ -121,12 +123,15 @@ void do_tailcall(vm_state_t *S, val_t funcv, reg_t offset, nargs_t nargs)
 
         /* Move down the arguments into appropriate slots. */
         memmove(S->regs, S->regs + offset, sizeof(val_t) * nargs);
+        return true;           /* no OP_RETURN needed */
     }
     else if (LIKELY(tag == SHAPE_TAG(builtin))) {
         assert(0 && "unimplemented"); /* TODO */
+        return false;
     }
     else if (LIKELY(tag == SHAPE_TAG(c_closure))) {
         assert(0 && "unimplemented"); /* TODO */
+        return false;
     }
     else {
         eris_type_error("invalid function object");
@@ -249,12 +254,14 @@ void eris_vm_run(vm_state_t *state)
         break;
 
       case OP_TAILCALL_CELL:
-        do_tailcall(&S, CELL_FUNC, ARG2, ARG3);
-        break;
+        if (do_tailcall(&S, CELL_FUNC, ARG2, ARG3))
+            break;
+        goto op_return;
 
       case OP_TAILCALL_REG:
-        do_tailcall(&S, REG_FUNC, ARG2, ARG3);
-        break;
+        if (do_tailcall(&S, REG_FUNC, ARG2, ARG3))
+            break;
+        goto op_return;
 
 
         /* Other instructions. */
@@ -271,6 +278,7 @@ void eris_vm_run(vm_state_t *state)
         S.ip += (jump_offset_t) LONGARG2;
         break;
 
+      op_return:
       case OP_RETURN: (void) 0;
         /* Put the return value where it ought to be. */
         REG(0) = REG(ARG1);
