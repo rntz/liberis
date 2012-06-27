@@ -12,9 +12,9 @@ DEP_DIR=$(BUILD_DIR)/dep
 
 EXES=$(addprefix $(EXE_DIR)/,$(EXE_NAMES))
 GENFILES=$(addprefix $(BUILD_DIR)/,$(GENFILE_NAMES))
-OBJFILES=$(SOURCES:src/%.c=$(OBJ_DIR)/%.o)
+OBJFILES=$(CFILES:src/%.c=$(OBJ_DIR)/%.o)
 
-all: $(EXES) $(GENFILES)
+all: $(EXES) $(GENFILES) TAGS
 
 
 # Real targets.
@@ -24,6 +24,9 @@ $(EXE_DIR)/rvmi: $(OBJFILES)
 %/:
 	@echo "  MKDIR	$@"
 	mkdir -p $@
+
+TAGS: $(SOURCES)
+	exuberant-ctags -eR src/ include/
 
 # Tarballs
 eris.tar.gz: $(TAR_FILES)
@@ -98,7 +101,7 @@ $(DEP_DIR)/%.dep: src/%.c $(GENFILES) | $(DEP_DIR)/
 	$(CC) -MM -MT "$(OBJ_DIR)/$*.o $@" $(filter-out -pedantic,$(CFLAGS)) \
 		$< >$@
 
-DEPFILES=$(SOURCES:src/%.c=$(DEP_DIR)/%.dep)
+DEPFILES=$(CFILES:src/%.c=$(DEP_DIR)/%.dep)
 
 # Only include dep files if not cleaning.
 NODEP_RULES=$(CLEAN_RULES) eris.tar.% uninstall

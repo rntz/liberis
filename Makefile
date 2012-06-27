@@ -1,10 +1,12 @@
-SOURCES=$(shell find src/ -name '*.c')
+CFILES=$(shell find src/ -name '*.c')
+HFILES=$(shell find src/ -name '*.h')
+INCFILES=$(shell find include/ -name '*.h')
+SOURCES=$(CFILES) $(HFILES) $(INCFILES) src/builtins.expando
+
 MAKEFILES=Makefile main.mk config.mk
 
 # Files included in distributed tarballs
-TAR_FILES=$(SOURCES) $(shell find src/ -name '*.h') src/builtins.expando \
-	include/README include/eris/builtins_pre \
-	$(shell find include/ -name '*.h') \
+TAR_FILES=$(SOURCES) include/README include/eris/builtins_pre \
 	README $(MAKEFILES)
 
 # Names of executables we generate
@@ -39,6 +41,7 @@ clean:
 	rm -f eris.tar.*
 
 pristine: clean
+	rm -f TAGS
 
 
 # If we're just cleaning, we can ignore everything else.

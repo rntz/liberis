@@ -2,3 +2,4 @@
 *.o
 /eris.tar.*
 /build
+/TAGS
