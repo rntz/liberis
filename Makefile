@@ -5,7 +5,7 @@ MAKEFILES=Makefile main.mk config.mk
 TAR_FILES=$(SOURCES) $(shell find src/ -name '*.h') src/builtins.expando \
 	include/README include/eris/builtins_pre \
 	$(shell find include/ -name '*.h') \
-	README $(MAKEFILES) depclean
+	README $(MAKEFILES)
 
 # Names of executables we generate
 EXE_NAMES=rvmi
@@ -25,17 +25,17 @@ include config.mk
 
 
 # Cleaning stuff.
-CLEAN_RULES=nodeps clean pristine
+CLEAN_RULES=depclean clean pristine
 .PHONY: $(CLEAN_RULES)
 
-nodeps:
-	./depclean
+depclean:
+	rm -rf build/*/dep
 
 clean:
 	rm -rf build/
 	rm -f eris.tar.*
 
-pristine: clean nodeps
+pristine: clean
 	rm -f _MAKEFLAGS _NEW_MAKEFLAGS _TMP.mk
 
 

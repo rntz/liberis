@@ -3,6 +3,7 @@ BUILD_ID=$(shell sha1sum _MAKEFLAGS | cut -f1 -d' ')
 BUILD_DIR=build/$(BUILD_ID)
 EXE_DIR=$(BUILD_DIR)/bin
 OBJ_DIR=$(BUILD_DIR)/obj
+DEP_DIR=$(BUILD_DIR)/dep
 
 EXES=$(addprefix $(EXE_DIR)/,$(EXE_NAMES))
 GENFILES=$(addprefix $(BUILD_DIR)/,$(GENFILE_NAMES))
@@ -87,12 +88,13 @@ $(EXES): %: | $(EXE_DIR)/
 # Empty dep files indicate a deleted source file; we should get rid of them.
 $(shell find . -name '*.dep' -empty -print0 | xargs -0 rm -f)
 
-$(BUILD_DIR)/%.dep: INCLUDE_DIRS+=$(BUILD_DIR)/include/
-$(BUILD_DIR)/%.dep: src/%.c $(GENFILES)
+$(DEP_DIR)/%.dep: INCLUDE_DIRS+=$(BUILD_DIR)/include/
+$(DEP_DIR)/%.dep: src/%.c $(GENFILES) | $(DEP_DIR)/
 	@echo "  DEP	$<"
-	set -e; $(CC) -MM -MT "$(OBJ_DIR)/$*.o $@" $(filter-out -pedantic,$(CFLAGS)) $< >$@
+	$(CC) -MM -MT "$(OBJ_DIR)/$*.o $@" $(filter-out -pedantic,$(CFLAGS)) \
+		$< >$@
 
-DEPFILES=$(SOURCES:src/%.c=$(BUILD_DIR)/%.dep)
+DEPFILES=$(SOURCES:src/%.c=$(DEP_DIR)/%.dep)
 
 # Only include dep files if not cleaning.
 NODEP_RULES=$(CLEAN_RULES) eris.tar.% uninstall
