@@ -39,15 +39,28 @@ include/eris/builtins.expando: builtins.expando include/eris/builtins_pre flags
 	    sed '/^#\|^$$/d' >> $@
 
 # Disassembly targets.
-ifneq (, $(filter rvmi.s rvmi.rodata,$(MAKECMDGOALS)))
+ifneq (, $(filter %.s %.rodata,$(MAKECMDGOALS)))
 CFLAGS+= -g
 endif
 
+OD=objdump
+ODFLAGS=-dSr
+
+vm.s: vm.o
+	@echo "   OBJDUMP	$<"
+	$(OD) $(ODFLAGS) $< > $@
+
+vm.rodata: vm.o
+	@echo "   DUMP RODATA	$<"
+	$(OD) $(ODFLAGS) --full-contents -j .rodata $< > $@
+
 rvmi.s: rvmi
-	objdump -M intel -S -d $< > $@
+	@echo "   OBJDUMP	$<"
+	$(OD) $(ODFLAGS) $< > $@
 
 rvmi.rodata: rvmi
-	objdump --full-contents -j .rodata $< > $@
+	@echo "   DUMP RODATA	$<"
+	$(OD) $(ODFLAGS) --full-contents -j .rodata $< > $@
 
 
 # Pattern rules
@@ -57,7 +70,7 @@ rvmi.rodata: rvmi
 
 $(EXES): %:
 	@echo "   LD	$^"
-	$(CCLD) $(LDFLAGS) -o $@ $^
+	$(CCLD) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 %.tar.gz:
 	@echo "   TAR	$@"

@@ -11,7 +11,7 @@ CPP=$(CC) -E
 CCLD=$(CC)
 CFLAGS+= -std=c99 -Wall -Wextra -Werror -pipe
 # LIBS is defined in Makefile.
-LDFLAGS+= $(addprefix -l,$(LIBS))
+LDLIBS+= $(addprefix -l,$(LIBS))
 
 # Directories to search for things.
 INCLUDE_DIRS+= $(INCLUDE)
@@ -42,10 +42,14 @@ $(error "unknown build mode: $(MODE)")
 endif
 
 
-# For building with clang. Notably, don't have to change any compilation flags.
-# NB. Compiling with clang gives nicer compilation error messages, but forfeits
-# the ability to use macros inside gdb.
+# Uncomment the following to build with clang. clang produces nicer error
+# messages, but forfeits the ability to use macros inside gdb.
+
 #CC=clang
+#CFLAGS+= -Qunused-arguments
+
+# -Qunused-arguments is needed because clang warns about unused arguments by
+# default; with -Werror, this makes dependency-generation fail.
 
 
 # Just for fun, if you want to see the various ways I'm violating the c99 spec.
