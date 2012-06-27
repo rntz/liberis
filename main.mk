@@ -1,5 +1,5 @@
 # Now that we have _MAKEFLAGS, we can actually do stuff.
-BUILD_ID=$(shell sha1sum _MAKEFLAGS | cut -f1 -d' ')
+BUILD_ID=$(shell sha1sum _MAKEFLAGS | cut -f1 -d' ' | head -c 10)
 BUILD_DIR=build/$(BUILD_ID)
 EXE_DIR=$(BUILD_DIR)/bin
 OBJ_DIR=$(BUILD_DIR)/obj
@@ -66,7 +66,7 @@ $(OBJ_DIR)/%.o: src/%.c | $(OBJ_DIR)/
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(EXES): %: | $(EXE_DIR)/
-	@echo "  LD	$^"
+	@echo "  LD	$@"
 	$(CCLD) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 %.tar.gz:
