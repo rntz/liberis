@@ -1,8 +1,6 @@
 *.dep
 *.o
 /eris.tar.*
-/rvmi
-/rvmi.s
-/rvmi.rodata
-/flags
-/include/eris/builtins.expando
+/build
+/_MAKEFLAGS
+/_TMP.mk
