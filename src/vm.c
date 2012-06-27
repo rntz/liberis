@@ -129,6 +129,8 @@ bool do_call(vm_state_t *S,
     /* Calling C closures */
     else if (LIKELY(tag == SHAPE_TAG(c_closure))) {
         assert(0 && "unimplemented"); /* TODO */
+        /* "Tail calling" a C closure is emulated using OP_RETURN. */
+        return tail_call;
     }
     /* Calling everything else */
     else {
