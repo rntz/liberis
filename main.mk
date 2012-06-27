@@ -14,7 +14,6 @@ EXES=$(addprefix $(EXE_DIR)/,$(EXE_NAMES))
 GENFILES=$(addprefix $(BUILD_DIR)/,$(GENFILE_NAMES))
 OBJFILES=$(SOURCES:src/%.c=$(OBJ_DIR)/%.o)
 
-# TODO: things prefixed with $(BUILD) should ensure $(BUILD) is made
 all: $(EXES) $(GENFILES)
 
 
