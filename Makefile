@@ -25,51 +25,25 @@ include config.mk
 
 
 # Cleaning stuff.
-CLEAN_RULES=depclean clean pristine
+CLEAN_RULES=depclean objclean clean pristine
 .PHONY: $(CLEAN_RULES)
 
 depclean:
 	rm -rf build/*/dep
+
+objclean:
+	rm -rf build/*/bin build/*/obj
 
 clean:
 	rm -rf build/
 	rm -f eris.tar.*
 
 pristine: clean
-	rm -f _MAKEFLAGS _NEW_MAKEFLAGS _TMP.mk
 
 
-# We segregate compiles under different flags into different directories.
-# Here be magic.
-
-# We need to use FORCE rather than just declaring _MAKEFLAGS to be phony because
-# phony targets are (it seems?) never considered up-to-date when used as
-# dependencies. We want the recipe for _MAKEFLAGS to always run, but _MAKEFLAGS
-# to be considered up-to-date as a dependency if it hasn't changed.
-.PHONY: FORCE
-FORCE:
-
-_MAKEFLAGS: _NEW_MAKEFLAGS FORCE
-	@{ test -f $@ && diff -q $@ $< >/dev/null; } || \
-	{ echo "Flags and/or makefiles changed; remaking."; cp $< $@; }
-	@rm $<
-
-_NEW_MAKEFLAGS:
-	@echo CC="$(CC)" > $@
-	@echo CCLD="$(CCLD)" >> $@
-	@echo CFLAGS="$(CFLAGS)" >> $@
-	@echo LDFLAGS="$(LDFLAGS)" >> $@
-	@echo LDLIBS="$(LDLIBS)" >> $@
-	@echo GENFILE_NAMES="$(sort $(GENFILE_NAMES))" >> $@
-	@sha1sum $(MAKEFILES) >> $@
-
-# Hack to get main.mk not to load until _MAKEFLAGS is created.
-_TMP.mk: _MAKEFLAGS
-	@echo "include main.mk" > $@
-
-# If we're just cleaning, no need to jump through all these hoops.
+# If we're just cleaning, we can ignore everything else.
 ifneq (,$(filter-out $(CLEAN_RULES), $(MAKECMDGOALS)))
-include _TMP.mk
+include main.mk
 else ifeq (,$(MAKECMDGOALS))
-include _TMP.mk
+include main.mk
 endif

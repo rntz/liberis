@@ -1,5 +1,10 @@
-# Now that we have _MAKEFLAGS, we can actually do stuff.
-BUILD_ID=$(shell sha1sum _MAKEFLAGS | cut -f1 -d' ' | head -c 10)
+# We segregate compiles under different flags into different directories.
+# Here be magic.
+BUILD_INFO:=$(CC),$(CCLD),$(CFLAGS),$(LDFLAGS),$(LDLIBS),$(GENFILE_NAMES),
+BUILD_INFO+=$(shell sha1sum $(MAKEFILES))
+
+BUILD_ID:=$(BUILD_NAME)-$(shell echo $(BUILD_INFO) | sha1sum | head -c 10)
+
 BUILD_DIR=build/$(BUILD_ID)
 EXE_DIR=$(BUILD_DIR)/bin
 OBJ_DIR=$(BUILD_DIR)/obj

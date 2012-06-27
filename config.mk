@@ -41,15 +41,18 @@ else
 $(error "unknown build mode: $(MODE)")
 endif
 
+BUILD_NAME=$(MODE)-$(CC)
+
 
 # Uncomment the following to build with clang. clang produces nicer error
 # messages, but forfeits the ability to use macros inside gdb.
-
 #CC=clang
-#CFLAGS+= -Qunused-arguments
 
 # -Qunused-arguments is needed because clang warns about unused arguments by
 # default; with -Werror, this makes dependency-generation fail.
+ifeq (clang,$(CC))
+CFLAGS+= -Qunused-arguments
+endif
 
 
 # Just for fun, if you want to see the various ways I'm violating the c99 spec.

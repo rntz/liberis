@@ -2,5 +2,3 @@
 *.o
 /eris.tar.*
 /build
-/_MAKEFLAGS
-/_TMP.mk
