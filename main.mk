@@ -1,5 +1,4 @@
 # We segregate compiles under different flags into different directories.
-# Here be magic.
 BUILD_INFO:=$(CC),$(CCLD),$(CFLAGS),$(LDFLAGS),$(LDLIBS),$(GENFILE_NAMES),
 BUILD_INFO+=$(shell sha1sum $(MAKEFILES))
 
