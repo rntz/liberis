@@ -96,7 +96,8 @@ int main(int argc, char **argv)
     obj_t *bar = make_bar();
 
     /* Initialize frame. */
-    call_frame_t *frame = &cont[NUM_CONTS-1];
+    /* NUM_CONTS-2 to leave a poisoned frame at the top */
+    call_frame_t *frame = &cont[NUM_CONTS-2];
     frame->tag = FRAME_CALL;
     frame->func = OBJ_AS_CLOSURE(bar);
 
