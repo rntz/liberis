@@ -37,10 +37,6 @@ void do_precall(vm_state_t *S, closure_t *func, reg_t offset, nargs_t nargs)
     (void) S; (void) offset;    /* unused */
 }
 
-/* TODO: is inlining this function N times, where N is the number of call
- * instructions we have (currently 4), really a good idea? But how can we not,
- * if we want the vm_state_t to be in regs?
- */
 static inline
 void do_builtin(vm_state_t *S, obj_t *obj, reg_t offset, nargs_t nargs)
 {
