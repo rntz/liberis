@@ -29,9 +29,12 @@ pointer to an allocated block with a header tag.
 
 The number of bits I use determines the minimum alignment of allocated objects.
 2 bits = 4 bytes, which is my alignment constraint already on 32-bit systems. 3
-bits = 8 bytes adds some overhead on 32-bit systems but might be worth it. 4
-bits = 16 bytes is probably too much. A variable-length encoding might be
-possible, but ugh what a PITA.
+bits = 8 bytes, which you might think would add overhead on a 32-bit system.
+However, we're going to need type headers anyway (see below), so all objects
+will use at least 4 bytes for a header, plus the content of the object (probably
+>= 4 bytes); so it's not really an issue. 4 bits = 16 bytes is probably too
+much. A variable-length encoding might be possible, but ugh what a PITA. So we
+probably want 3-bit tags.
 
 Let k be the number of tag bits we eventually decide to use. We'll want more
 than 2^k types, so we use 2^k-1 tags for common types and reserve one tag for
@@ -79,10 +82,10 @@ Disbenefits of it:
 2. It makes the "undefined" state of cells more interesting, and possibly less
    efficient, to encode.
 
-*** What tags would we use if we had 8 tags?
+*** What tags would we use if we had 8 tags (3 bits)?
 1. Fixnum
-2. Closure
-3. Builtin
+2. Builtin
+3. Closure
 4. Cons
 5. ? Nil
 6. ? String
