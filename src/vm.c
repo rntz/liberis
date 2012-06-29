@@ -40,8 +40,19 @@ void do_precall(vm_state_t *S, closure_t *func, reg_t offset, nargs_t nargs)
 static inline
 void do_builtin(vm_state_t *S, obj_t *obj, reg_t offset, nargs_t nargs)
 {
+    assert (OBJ_ISA(builtin, obj));
+
+    builtin_t *builtin = OBJ_CONTENTS(builtin, obj);
+    if (UNLIKELY(nargs != builtin->num_args) &&
+        (UNLIKELY(!builtin->variadic) || UNLIKELY(nargs < builtin->num_args)))
+    {
+        /* TODO: better error message */
+        eris_arity_error("builtin");
+    }
+
     switch (OBJ_CONTENTS(builtin, obj)->op) {
-#define BUILTIN(name, ...) case CAT(BOP_,name): { __VA_ARGS__ } break;
+#define BUILTIN(name, num_args, variadic, ...)          \
+        case CAT(BOP_,name): { __VA_ARGS__ } break;
 #define NARGS nargs
 #define ARG(i) S->regs[offset+(i)]
 #define DEST S->regs[offset]

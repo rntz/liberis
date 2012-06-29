@@ -2,9 +2,14 @@
  * defined to something that will do a useful thing for each builtin definition.
  * As such, it has no include guards.
  *
- * BUILTIN(name, ...)
+ * BUILTIN(name, num_args, variadic, ...)
  *
  * - name: the name of the builtin. all caps, suitable for use in a macro name.
+ *
+ * - num_args: integer literal for the number of arguments the builtin takes. if
+ *   the builtin is variadic, this is the _minimum_ number of arguments.
+ *
+ * - variadic: "true" if the builtin is variadic, "false" otherwise.
  *
  * - __VA_ARGS__: code that evaluates the builtin. expects the following macros
  *   to be defined:
@@ -28,71 +33,77 @@
 #endif
 
 /* Conses */
-BUILTIN(CONS,
+BUILTIN(CONS, 2, false,
         cons_t *cons = MAKE(cons);
         cons->car = ARG(0);
         cons->cdr = ARG(1);
         DEST = CONTENTS_VAL(cons);
     )
 
-BUILTIN(CAR, cons_t *cons = VAL_AS(cons, ARG(0)); DEST = cons->car;)
-BUILTIN(CDR, cons_t *cons = VAL_AS(cons, ARG(0)); DEST = cons->cdr;)
+BUILTIN(CAR, 2, false, cons_t *cons = VAL_AS(cons, ARG(0)); DEST = cons->car;)
+BUILTIN(CDR, 2, false, cons_t *cons = VAL_AS(cons, ARG(0)); DEST = cons->cdr;)
 
 /* Strings */
-BUILTIN(STR_CAT, UNIMPLEMENTED) /* variadic */
-BUILTIN(STR_EQ, UNIMPLEMENTED)
-BUILTIN(STR_CMP, UNIMPLEMENTED)
-BUILTIN(STR_SUBSTR, UNIMPLEMENTED)
-BUILTIN(INTERN, UNIMPLEMENTED)
+BUILTIN(STR_CAT, 0, true, UNIMPLEMENTED) /* variadic */
+BUILTIN(STR_EQ, 2, false, UNIMPLEMENTED)
+BUILTIN(STR_CMP, 2, false, UNIMPLEMENTED)
+BUILTIN(STR_SUBSTR, 3, false, UNIMPLEMENTED)
+BUILTIN(INTERN, 1, false, UNIMPLEMENTED)
 
 /* Equality, comparison, other tests */
 /* Should equality tests be variadic? */
 /* fastest & crudest equality test */
-BUILTIN(RAW_EQ, UNIMPLEMENTED)
-BUILTIN(NUM_EQ, UNIMPLEMENTED)
-BUILTIN(SYM_EQ, UNIMPLEMENTED)
-BUILTIN(IS_NIL, UNIMPLEMENTED)
+BUILTIN(RAW_EQ, 2, false, UNIMPLEMENTED)
+BUILTIN(NUM_EQ, 2, false, UNIMPLEMENTED)
+BUILTIN(SYM_EQ, 2, false, UNIMPLEMENTED)
+BUILTIN(IS_NIL, 1, false, UNIMPLEMENTED)
 
 /* Miscellany. */
-BUILTIN(APPLY, UNIMPLEMENTED)   /* variadic */
+BUILTIN(APPLY, 2, true, UNIMPLEMENTED)   /* variadic */
 
 
 /* Arithmetic */
 /* add, sub, mul, div all variadic */
-BUILTIN(ADD, UNIMPLEMENTED)
-BUILTIN(SUB, UNIMPLEMENTED)     /* with 1 arg, negates */
-BUILTIN(MUL, UNIMPLEMENTED)
-BUILTIN(DIV, UNIMPLEMENTED)     /* with 1 arg, inverts */
+BUILTIN(ADD, 0, true, UNIMPLEMENTED)
+BUILTIN(SUB, 1, true, UNIMPLEMENTED)     /* with 1 arg, negates */
+BUILTIN(MUL, 0, true, UNIMPLEMENTED)
+BUILTIN(DIV, 1, true, UNIMPLEMENTED)     /* with 1 arg, inverts */
 
-BUILTIN(MOD, UNIMPLEMENTED)
-BUILTIN(MIN, UNIMPLEMENTED)     /* variadic, >0 args */
-BUILTIN(MAX, UNIMPLEMENTED)     /* variadic, >0 args */
-BUILTIN(ABS, UNIMPLEMENTED)
+BUILTIN(MOD, 2, false, UNIMPLEMENTED)
+BUILTIN(MIN, 1, true, UNIMPLEMENTED)     /* variadic, >0 args */
+BUILTIN(MAX, 1, true, UNIMPLEMENTED)     /* variadic, >0 args */
+BUILTIN(ABS, 1, false, UNIMPLEMENTED)
 
-BUILTIN(SQRT, UNIMPLEMENTED)
-BUILTIN(EXP, UNIMPLEMENTED)     /* 2adic (b, n) --> b^n
-                                 * or 1adic (n) --> e^n */
-BUILTIN(LOG, UNIMPLEMENTED)     /* 2adic (b, n) --> log_b(n)
-                                 * or 1adic (n) --> log_e(n) */
+BUILTIN(SQRT, 1, false, UNIMPLEMENTED)
+
+/* exp is 2adic (exp b n) --> b^n
+ *     or 1adic   (exp n) --> e^n */
+BUILTIN(EXP, 1, true, UNIMPLEMENTED)
+
+/* log is 2adic (log b n) --> log_b(n)
+ *     or 1adic   (log n) --> log_e(n)
+ */
+BUILTIN(LOG, 1, true, UNIMPLEMENTED)
 
 /* I do NOT (yet?) guarantee these behave as in r5rs.
  * TODO: think about semantics. */
-BUILTIN(EXACT_TO_INEXACT, UNIMPLEMENTED)
-BUILTIN(INEXACT_TO_EXACT, UNIMPLEMENTED)
+BUILTIN(EXACT_TO_INEXACT, 1, false, UNIMPLEMENTED)
+BUILTIN(INEXACT_TO_EXACT, 1, false, UNIMPLEMENTED)
 
 /* These SHOULD behave as in r5rs. */
-BUILTIN(FLOOR, UNIMPLEMENTED)
-BUILTIN(CEILING, UNIMPLEMENTED)
-BUILTIN(TRUNCATE, UNIMPLEMENTED)
-BUILTIN(ROUND, UNIMPLEMENTED)
+BUILTIN(FLOOR, 1, false, UNIMPLEMENTED)
+BUILTIN(CEILING, 1, false, UNIMPLEMENTED)
+/* TODO: should these take precisions to truncate/round to? */
+BUILTIN(TRUNCATE, 1, false, UNIMPLEMENTED)
+BUILTIN(ROUND, 1, false, UNIMPLEMENTED)
 
 /* Bitwise ops. Produce errors on input that isn't integral. */
-BUILTIN(BIT_AND, UNIMPLEMENTED)
-BUILTIN(BIT_OR, UNIMPLEMENTED)
-BUILTIN(BIT_XOR, UNIMPLEMENTED)
-BUILTIN(BIT_NOT, UNIMPLEMENTED)
+BUILTIN(BIT_AND, 1, true, UNIMPLEMENTED)
+BUILTIN(BIT_OR, 1, true, UNIMPLEMENTED)
+BUILTIN(BIT_XOR, 1, true, UNIMPLEMENTED)
+BUILTIN(BIT_NOT, 1, false, UNIMPLEMENTED)
 /* Right-shifts are always arithmetic, not logical, since we simulate
  * unlimited-precision arithmetic.
  */
-BUILTIN(BIT_SHR, UNIMPLEMENTED)
-BUILTIN(BIT_SHL, UNIMPLEMENTED)
+BUILTIN(BIT_SHR, 2, false, UNIMPLEMENTED)
+BUILTIN(BIT_SHL, 2, false, UNIMPLEMENTED)

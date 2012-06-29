@@ -71,6 +71,8 @@ SHAPE(num) {
 
 SHAPE(builtin) {
     builtin_op_t op;
+    nargs_t num_args;
+    bool variadic;
 };
 
 SHAPE(proto) {
