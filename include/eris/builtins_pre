@@ -1,9 +1,4 @@
-/* Clients of liberis: DO NOT INCLUDE THIS HEADER UNDER ANY CIRCUMSTANCES.
- *
- * While we ship this header publicly, the only thing about it guaranteed to be
- * constant between compatible version of eris is the ordering of the builtins
- * contained herein.
- */
+/* Clients of liberis: DO NOT INCLUDE THIS HEADER UNDER ANY CIRCUMSTANCES. */
 
 #ifndef ERIS_BUILTIN
 #error "eris/builtins.expando included with ERIS_BUILTIN undefined"
