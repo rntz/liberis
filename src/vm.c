@@ -8,7 +8,7 @@
 #include "vm.h"
 #include "vm_util.h"
 
-#if HAVE_PRAGMA_GCC_DIAGNOSTIC
+#ifdef HAVE_PRAGMA_GCC_DIAGNOSTIC
 /* Causes an error if we don't explicitly handle all cases of an enumerated type
  * in a switch statement, _even though_ we have a "default" case. This is
  * desirable for the switches in this file, which really should be handling all
@@ -143,6 +143,8 @@ bool do_call(vm_state_t *S,
     else {
         eris_type_error("invalid function object");
     }
+
+    UNREACHABLE;
 }
 
 static inline

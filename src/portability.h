@@ -2,65 +2,93 @@
 #ifndef _PORTABILITY_H_
 #define _PORTABILITY_H_
 
+#include <assert.h>
 #include <stdbool.h>
+#include <stdlib.h>             /* for abort() */
 
 #include <eris/portability.h>
 
-/* Clang defines __has_builtin, but other compilers don't. */
-#ifndef __has_builtin
-#define __has_builtin(x) 0
-#endif
-
-#ifndef __has_attribute
-#define __has_attribute(x) 0
-#endif
-
-/* This macro is used to inform the compiler that a particular point is
- * unreachable. Both clang and gcc use __builtin_unreachable for this purpose.
+
+/* ---------- Compiler-dependent macros ----------
  *
- * FIXME: I have no idea which gcc version introduced __builtin_unreachable;
- * currently assuming they all have it.
+ * Macros defined in a compiler-dependent fashion by this file, and their
+ * purposes (in parentheses):
+ *
+ * - NORETURN: Marks a function as not returning. (optimization, warnings)
+ *
+ * - UNREACHABLE: expression that never executes; indicates unreachability.
+ *   (optimization)
+ *
+ * - EXPECT_LONG(x, v): Indicates that we "expect" x to have the value v, which
+ *   should be a constant. (optimization)
+ *
+ *   Avoid direct use of this macro; prefer LIKELY() and UNLIKELY(), defined
+ *   further down in this file.
+ *
+ * - HAVE_PRAGMA_GCC_DIAGNOSTIC: defined only if we believe that our compiler
+ *   supports the "#pragma GCC diagnostic" directive. (warnings)
+ *
+ * Define IGNORE_COMPILER_FEATURES to force all of these to use their default,
+ * standards-compliant, non-compiler-specific definitions.
  */
-#if __has_builtin(__builtin_unreachable) || defined __GNUC__
+
+#ifndef IGNORE_COMPILER_FEATURES
+#ifdef __GNUC__
+
+/* FIXME: should be more cautious about what features gcc supports, based on
+ * version numbers */
+#define HAS_PRAGMA_GCC_DIAGNOSTIC
+#define NORETURN __attribute__((__noreturn__))
 #define UNREACHABLE (__builtin_unreachable())
-#else
-#define UNREACHABLE (assert(0 && "unreachable"))
+#define EXPECT_LONG __builtin_expect
+
+#else  /* __GNUC__ */
+
+#ifdef __clang__
+#define HAS_PRAGMA_GCC_DIAGNOSTIC
 #endif
 
-/* FIXME: No idea which gcc version introduced __attribute__(noreturn);
- * currently assuming they all have it. */
-#if __has_attribute(__noreturn__) || defined __GNUC__
+#ifdef __has_attribute
+#if __has_attribute(__noreturn__)
 #define NORETURN __attribute__((__noreturn__))
-#else
+#endif
+#endif  /* __has_attribute */
+
+#ifdef __has_builtin
+#if __has_builtin(__builtin_unreachabe)
+#define UNREACHABLE (__builtin_unreachable())
+#endif
+#if __has_builtin(__builtin_expect)
+#define EXPECT_LONG __builtin_expect
+#endif
+#endif  /* __has_builtin */
+
+#endif  /* __GNUC__ */
+#endif  /* IGNORE_COMPILER_FEATURES */
+
+/* Portable definitions. */
+#ifndef NORETURN
 #define NORETURN
 #endif
 
-/* These macros are used to inform the compiler that the boolean expression
- * contained within is "likely" (probably true) or "unlikely" (probably false),
- * respectively. Example usage:
- *
- *      if (LIKELY(expr)) {     // fast path or common case
- *          ...
- *      } else {                // slow path
- *          ...
- *      }
- *
- * FIXME: I have no idea which gcc version introduced __builtin_expect;
- * currently assuming they all have it.
- */
-#if __has_builtin(__builtin_expect) || defined __GNUC__
-#define EXPECT_LONG __builtin_expect
-#else
-#define EXPECT_LONG(x, v) ((v), (x))
+#ifndef UNREACHABLE
+/* the abort() is necessary to ensure this does not return when NDEBUG is
+ * defined. */
+#define UNREACHABLE (assert(0 && "unreachable"), abort())
 #endif
 
-#define EXPECT_BOOL(x, v) ((bool) EXPECT_LONG(!!(x), (long)(v)))
+#ifndef EXPECT_LONG
+#define EXPECT_LONG(x,v) ((void)(v),(x))
+#endif
+
+
+/* ---------- Derived macros ----------
+ *
+ * These macros are defined entirely in terms of the above macros, so they will
+ * automatically take advantage of compiler-specific features iff available.
+ */
+#define EXPECT_BOOL(x,v) ((bool) EXPECT_LONG(!!(x), (long)(v)))
 #define LIKELY(x) EXPECT_BOOL(x, true)
 #define UNLIKELY(x) EXPECT_BOOL(x, false)
-
-/* FIXME: given gcc or clang, assumes sufficiently recent */
-#if defined __GNUC__ || defined __clang__
-#define HAVE_PRAGMA_GCC_DIAGNOSTIC 1
-#endif
 
 #endif
