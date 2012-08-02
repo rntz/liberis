@@ -1,0 +1,9 @@
+#!/bin/sh
+for MODE in debug release; do
+    for CC in gcc clang; do
+        for CFLAGS in '' -DIGNORE_COMPILER_FEATURES; do
+            echo ===== running: CFLAGS=$CFLAGS make CC=$CC MODE=$MODE "$@"
+            CFLAGS=$CFLAGS make CC=$CC MODE=$MODE "$@" || exit 1
+        done
+    done
+done
