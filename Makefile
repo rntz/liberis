@@ -16,7 +16,7 @@ EXE_NAMES=rvmi
 GENFILE_NAMES=include/eris/builtins.expando
 
 # Libraries we depend on.
-LIBS=gmp slz Judy
+LIBS=gmp Judy
 
 # Make "all" default target.
 .PHONY: all
