@@ -48,12 +48,6 @@ BUILD_NAME=$(MODE)-$(CC)
 # messages, but forfeits the ability to use macros inside gdb.
 #CC=clang
 
-# -Qunused-arguments is needed because clang warns about unused arguments by
-# default; with -Werror, this makes dependency-generation fail.
-ifeq (clang,$(CC))
-CFLAGS+= -Qunused-arguments
-endif
-
 
 # Just for fun, if you want to see the various ways I'm violating the c99 spec.
 #CFLAGS+= -pedantic -Wno-error

@@ -97,7 +97,7 @@ $(shell find . -name '*.dep' -empty -print0 | xargs -0 rm -f)
 $(DEP_DIR)/%.dep: INCLUDE_DIRS+=$(BUILD_DIR)/include/
 $(DEP_DIR)/%.dep: src/%.c $(GENFILES) | $(DEP_DIR)/
 	@echo "  DEP	$<"
-	$(CC) -MM -MT "$(OBJ_DIR)/$*.o $@" $(filter-out -pedantic,$(CFLAGS)) \
+	$(CC) -MM -MT "$(OBJ_DIR)/$*.o $@" $(filter-out -pedantic -g%,$(CFLAGS)) \
 		$< >$@
 
 DEPFILES=$(CFILES:src/%.c=$(DEP_DIR)/%.dep)
