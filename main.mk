@@ -22,10 +22,11 @@ $(EXE_DIR)/rvmi: $(OBJFILES)
 .PRECIOUS: %/
 %/:
 	@echo "  MKDIR	$@"
-	mkdir -p $@
+	$(QUIET) mkdir -p $@
 
 TAGS: $(SOURCES)
-	exuberant-ctags -eR src/ include/
+	@echo "  ETAGS"
+	$(QUIET) exuberant-ctags -eR src/ include/
 
 # Tarballs
 eris.tar.gz: $(TAR_FILES)
@@ -35,10 +36,10 @@ eris.tar.bz2: $(TAR_FILES)
 $(BUILD_DIR)/include/eris/builtins.expando: \
 		src/builtins.expando include/eris/builtins_pre
 	@echo "  GEN	$@"
-	mkdir -p "$(dir $@)"
-	cat include/eris/builtins_pre > $@
-	$(CPP) $(CFLAGS) -D'BUILTIN(x,...)=ERIS_BUILTIN(x)' -o - - < $< |\
-	    sed '/^#\|^$$/d' >> $@
+	$(QUIET) mkdir -p "$(dir $@)"
+	$(QUIET) cat include/eris/builtins_pre > $@
+	$(QUIET) $(CPP) $(CFLAGS) -D'BUILTIN(x,...)=ERIS_BUILTIN(x)' \
+	    -o - - < $< | sed '/^#\|^$$/d' >> $@
 
 # Disassembly targets.
 ifneq (, $(filter %.s %.rodata,$(MAKECMDGOALS)))
@@ -49,19 +50,15 @@ OD=objdump
 ODFLAGS=-dSr
 
 $(BUILD_DIR)/vm.s: $(OBJ_DIR)/vm.o | $(BUILD_DIR)/
-	@echo "  OBJDUMP	$<"
 	$(OD) $(ODFLAGS) $< > $@
 
 $(BUILD_DIR)/vm.rodata: $(OBJ_DIR)/vm.o | $(BUILD_DIR)/
-	@echo "  DUMP RODATA	$<"
 	$(OD) $(ODFLAGS) --full-contents -j .rodata $< > $@
 
 $(BUILD_DIR)/rvmi.s: $(EXE_DIR)/rvmi | $(BUILD_DIR)/
-	@echo "  OBJDUMP	$<"
 	$(OD) $(ODFLAGS) $< > $@
 
 $(BUILD_DIR)/rvmi.rodata: $(EXE_DIR)/rvmi | $(BUILD_DIR)/
-	@echo "  DUMP RODATA	$<"
 	$(OD) $(ODFLAGS) --full-contents -j .rodata $< > $@
 
 
@@ -69,23 +66,23 @@ $(BUILD_DIR)/rvmi.rodata: $(EXE_DIR)/rvmi | $(BUILD_DIR)/
 $(OBJ_DIR)/%.o: INCLUDE_DIRS+=$(BUILD_DIR)/include/
 $(OBJ_DIR)/%.o: src/%.c | $(OBJ_DIR)/
 	@echo "  CC	$<"
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(QUIET) $(CC) $(CFLAGS) -c $< -o $@
 
 $(EXES): %: | $(EXE_DIR)/
 	@echo "  LD	$@"
-	$(CCLD) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+	$(QUIET) $(CCLD) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 %.tar.gz:
 	@echo "  TAR	$@"
-	ln -sf ./ $*
-	tar czf $@ $(addprefix $*/,$^)
-	rm $*
+	$(QUIET) ln -sf ./ $*
+	$(QUIET) tar czf $@ $(addprefix $*/,$^)
+	$(QUIET) rm $*
 
 %.tar.bz2:
 	@echo "  TAR	$@"
-	ln -sf ./ $*
-	tar cjf $@ $(addprefix $*/,$^)
-	rm $*
+	$(QUIET) ln -sf ./ $*
+	$(QUIET) tar cjf $@ $(addprefix $*/,$^)
+	$(QUIET) rm $*
 
 
 # Automatic dependency generation.
@@ -97,7 +94,7 @@ $(shell find . -name '*.dep' -empty -print0 | xargs -0 rm -f)
 $(DEP_DIR)/%.dep: INCLUDE_DIRS+=$(BUILD_DIR)/include/
 $(DEP_DIR)/%.dep: src/%.c $(GENFILES) | $(DEP_DIR)/
 	@echo "  DEP	$<"
-	$(CC) -MM -MT "$(OBJ_DIR)/$*.o $@" $(filter-out -pedantic -g%,$(CFLAGS)) \
+	$(QUIET) $(CC) -MM -MT "$(OBJ_DIR)/$*.o $@" $(filter-out -pedantic -g%,$(CFLAGS)) \
 		$< >$@
 
 DEPFILES=$(CFILES:src/%.c=$(DEP_DIR)/%.dep)
@@ -106,8 +103,8 @@ DEPFILES=$(CFILES:src/%.c=$(DEP_DIR)/%.dep)
 NODEP_RULES=$(CLEAN_RULES) eris.tar.% uninstall
 
 ifneq (,$(filter-out $(NODEP_RULES), $(MAKECMDGOALS)))
-include $(DEPFILES)
+-include $(DEPFILES)
 else ifeq (,$(MAKECMDGOALS))
-include $(DEPFILES)
+-include $(DEPFILES)
 else
 endif

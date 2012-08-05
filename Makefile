@@ -26,6 +26,16 @@ INCLUDE_DIRS+= include/
 include config.mk
 
 
+# verbose flag
+V?=0
+
+ifeq (0,$(V))
+QUIET:=@
+else
+QUIET:=
+endif
+
+
 # Cleaning stuff.
 CLEAN_RULES=depclean objclean clean pristine
 .PHONY: $(CLEAN_RULES)
