@@ -81,5 +81,6 @@ static inline val_t deref_cell(cell_t *g)
 #define MAKE(shape) MAKE_PLUS(shape, 0)
 
 #define MAKE_CLOSURE(nupvals) MAKE_WITH(closure, upvals, nupvals)
+#define MAKE_SEQ(nelems) MAKE_WITH(seq, data, nelems)
 
 #endif
