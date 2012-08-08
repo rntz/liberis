@@ -84,8 +84,8 @@ void eris_builtin(eris_frame_t *S, eris_builtin_t builtin, size_t nargs);
 
 /* Pushing data onto stack. */
 void eris_push_int(eris_frame_t *S, eris_int_t i);
-void eris_push_ratio(eris_frame_t *S, eris_int_t num, eris_uint_t denom);
 void eris_push_float(eris_frame_t *S, eris_float_t f);
+/* TODO: eris_push_gmp_blah */
 
 void eris_push_cons(eris_frame_t *S, eris_idx_t car_idx, eris_idx_t cdr_idx);
 void eris_push_cstring(eris_frame_t *S, const char *string);
