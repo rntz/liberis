@@ -21,7 +21,11 @@ LDFLAGS+=$(addprefix -L,$(LIB_DIRS))
 
 
 # Release vs. debugging compile flags
+ifeq (gcc,$(CC))
 CFLAGS_DEBUG= -O0 -ggdb3
+else
+CFLAGS_DEBUG= -O0 -g
+endif
 CFLAGS_RELEASE= -O3 -fomit-frame-pointer -DNDEBUG -DERIS_RELEASE
 # feel free to mess around with this one.
 CFLAGS_CUSTOM=
