@@ -196,15 +196,16 @@ void eris_vm_run(vm_state_t *state)
         ++S.ip;
         break;
 
-      case OP_LOAD_INT:
-        /* Allocating; update control frame IP. */
-        S.frame->ip = S.ip;
-        obj_t *obj = NEW(num);
-        num_t *num = OBJ_CONTENTS(num, obj);
-        num->tag = NUM_INTPTR;
-        num->data.v_intptr = LONGARG2;
-        DEST = OBJ_VAL(obj);
-        ++S.ip;
+      case OP_LOAD_INT: {
+          /* Allocating; update control frame IP. */
+          S.frame->ip = S.ip;
+          obj_t *obj = NEW(num);
+          num_t *num = OBJ_CONTENTS(num, obj);
+          num->tag = NUM_INTPTR;
+          num->data.v_intptr = LONGARG2;
+          DEST = OBJ_VAL(obj);
+          ++S.ip;
+      }
         break;
 
       case OP_LOAD_UPVAL:
@@ -318,8 +319,8 @@ void eris_vm_run(vm_state_t *state)
           S.regs -= VM_ARG2(*S.frame->ip);
           S.ip = S.frame->ip + 1; /* +1 to skip past the call instr. */
           S.func = S.frame->func;
-          break;
       }
+        break;
 
       case OP_IF:
         do_cond(&S, !VAL_IS_NIL(REG(ARG1)));
@@ -360,8 +361,8 @@ void eris_vm_run(vm_state_t *state)
               func->upvals[i] = REG(idx);
           }
           S.ip += INTDIV_CEIL(1 + nupvals, sizeof(instr_t));
-          break;
       }
+        break;
 
       default:
         IMPOSSIBLE("unrecognized or unimplemented opcode: %u", OP);
