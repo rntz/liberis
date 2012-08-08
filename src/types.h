@@ -101,11 +101,15 @@ SHAPE(string) {
     const char data[];
 };
 
-SHAPE(cons) {
-    val_t car;
-    val_t cdr;
+/* TODO: Immutable sequence representation should be smarter.
+ * At the very least, ropes, if not finger trees.
+ */
+SHAPE(seq) {
+    size_t len;
+    val_t data[];
 };
 
+/* NB. differ from seqs in tha they are mutable */
 SHAPE(vec) {
     size_t len;
     val_t data[];

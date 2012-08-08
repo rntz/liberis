@@ -37,7 +37,6 @@ static inline obj_t *obj_check_tag(shape_t *tag, obj_t *obj)
 #define OBJ_AS_CLOSURE(o) OBJ_AS(closure, o)
 
 #define VAL_AS_CLOSURE(v) VAL_AS(closure, v)
-#define VAL_AS_CONS(v) VAL_AS(cons, v)
 #define VAL_AS_STRING(v) VAL_AS(string, v)
 
 

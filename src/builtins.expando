@@ -33,16 +33,18 @@
 #error "builtins.expando included with BUILTIN undefined"
 #endif
 
-/* Conses */
-BUILTIN(CONS, 2, false,
-        cons_t *cons = MAKE(cons);
-        cons->car = ARG(0);
-        cons->cdr = ARG(1);
-        DEST = CONTENTS_VAL(cons);
-    )
+/* Sequences */
+/* (SEQ-MAKE x0 x1 ... xn) == `(,x0 ,x1 ... ,xn) */
+BUILTIN(SEQ_MAKE, 0, true, UNIMPLEMENTED)
 
-BUILTIN(CAR, 2, false, cons_t *cons = VAL_AS(cons, ARG(0)); DEST = cons->car;)
-BUILTIN(CDR, 2, false, cons_t *cons = VAL_AS(cons, ARG(0)); DEST = cons->cdr;)
+/* (SEQ-TABULATE n f) == (SEQ-MAKE (f 0) (f 1) ... (f (- n 1))) */
+BUILTIN(SEQ_TABULATE, 2, false, UNIMPLEMENTED)
+
+/* (SEQ-NTH n s) ==> `n`th element of `s` */
+BUILTIN(SEQ_NTH, 2, false, UNIMPLEMENTED)
+
+/* (SEQ-LENGTH s) ==> length of `s` */
+BUILTIN(SEQ_LENGTH, 1, false, UNIMPLEMENTED)
 
 /* Strings */
 BUILTIN(STR_CAT, 0, true, UNIMPLEMENTED) /* variadic */

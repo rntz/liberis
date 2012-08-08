@@ -12,7 +12,7 @@ SHAPE(proto);
 SHAPE(closure);
 SHAPE(c_closure);
 SHAPE(string);
-SHAPE(cons);
+SHAPE(seq);
 SHAPE(vec);
 SHAPE(symbol);
 SHAPE(cell);
