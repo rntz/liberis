@@ -19,6 +19,7 @@
  *   - DEST: location to put the result value in.
  *   - ARITY_ERROR(): signals an arity error.
  *   - TYPE_ERROR(): signals a type error.
+ *   - THREAD: pointer to the current eris_thread_t
  *   - UNIMPLEMENTED: signals the builtin is unimplemented.
  *
  *   TODO: TYPE_ERROR (and maybe ARITY_ERROR?) should take args to indicate what
@@ -56,7 +57,9 @@ BUILTIN(INTERN, 1, false, UNIMPLEMENTED)
 BUILTIN(RAW_EQ, 2, false, UNIMPLEMENTED)
 BUILTIN(NUM_EQ, 2, false, UNIMPLEMENTED)
 BUILTIN(SYM_EQ, 2, false, UNIMPLEMENTED)
-BUILTIN(IS_NIL, 1, false, UNIMPLEMENTED)
+BUILTIN(IS_NIL, 1, false,
+        DEST = eris_make_bool(THREAD->vm, ARG(0) == eris_nil);
+    )
 
 /* Miscellany. */
 BUILTIN(APPLY, 2, true, UNIMPLEMENTED)   /* variadic */

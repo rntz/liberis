@@ -59,6 +59,7 @@ void do_builtin(vm_state_t *S, obj_t *obj, reg_t offset, nargs_t nargs)
             /* TODO: better error messages */
 #define ARITY_ERROR() eris_arity_error("builtin")
 #define TYPE_ERROR() eris_type_error("builtin")
+#define THREAD S->thread
 #define UNIMPLEMENTED assert(0 && "builtin unimplemented");
 
 #include "builtins.expando"

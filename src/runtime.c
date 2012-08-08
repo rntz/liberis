@@ -5,6 +5,23 @@
 
 #include "runtime.h"
 
+obj_t *eris_new(shape_t *tag, size_t size)
+{
+    assert (size >= sizeof(obj_t)); /* sanity/precondition */
+    obj_t *obj = malloc(size);
+    if (!obj)
+        eris_die("OOM allocating object with tag %p", tag);
+    assert (obj);
+    obj->tag = tag;
+    return obj;
+}
+
+void eris_free(obj_t *obj)
+{
+    assert(obj);
+    free(obj);
+}
+
 void eris_vdie(const char *fmt, va_list ap)
 {
     vfprintf(stderr, fmt, ap);
@@ -30,21 +47,4 @@ void eris_arity_error(char *x, ...)
 {
     eris_die("arity error");
     (void) x;
-}
-
-obj_t *eris_new(shape_t *tag, size_t size)
-{
-    assert (size >= sizeof(obj_t)); /* sanity/precondition */
-    obj_t *obj = malloc(size);
-    if (!obj)
-        eris_die("OOM allocating object with tag %p", tag);
-    assert (obj);
-    obj->tag = tag;
-    return obj;
-}
-
-void eris_free(obj_t *obj)
-{
-    assert(obj);
-    free(obj);
 }
