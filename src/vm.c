@@ -8,18 +8,6 @@
 #include "vm.h"
 #include "vm_util.h"
 
-#ifdef HAVE_PRAGMA_GCC_DIAGNOSTIC
-/* Causes an error if we don't explicitly handle all cases of an enumerated type
- * in a switch statement, _even though_ we have a "default" case. This is
- * desirable for the switches in this file, which really should be handling all
- * cases explicitly, and which have default cases which exist only to catch bugs
- * (in a debug build) or inform the compiler that the case is unreachable (in a
- * release build).
- */
-#pragma GCC diagnostic error "-Wswitch-enum"
-#endif
-
-
 /* Helper functions for call instructions. */
 /* Does arity checking and conses excess variadic arguments. */
 static inline
@@ -50,7 +38,7 @@ void do_builtin(vm_state_t *S, obj_t *obj, reg_t offset, nargs_t nargs)
         eris_arity_error("builtin");
     }
 
-    switch (OBJ_CONTENTS(builtin, obj)->op) {
+    switch (builtin->op) {
 #define BUILTIN(name, num_args, variadic, ...)          \
         case CAT(BOP_,name): { __VA_ARGS__ } break;
 #define NARGS nargs
@@ -60,7 +48,7 @@ void do_builtin(vm_state_t *S, obj_t *obj, reg_t offset, nargs_t nargs)
 #define ARITY_ERROR() eris_arity_error("builtin")
 #define TYPE_ERROR() eris_type_error("builtin")
 #define THREAD S->thread
-#define UNIMPLEMENTED assert(0 && "builtin unimplemented");
+#define UNIMPLEMENTED eris_die("builtin %u unimplemented", builtin->op);
 
 #include "builtins.expando"
 
@@ -71,6 +59,8 @@ void do_builtin(vm_state_t *S, obj_t *obj, reg_t offset, nargs_t nargs)
 #undef ARG
 #undef NARGS
 #undef BUILTIN
+
+      default: IMPOSSIBLE("unrecognized builtin: %u", builtin->op);
     }
     (void) nargs;            /* unused due to unimplemented variadic builtins */
 }

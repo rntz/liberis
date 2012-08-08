@@ -37,16 +37,11 @@
 
 /* FIXME: should be more cautious about what features gcc supports, based on
  * version numbers */
-#define HAS_PRAGMA_GCC_DIAGNOSTIC
 #define NORETURN __attribute__((__noreturn__))
 #define UNREACHABLE (__builtin_unreachable())
 #define EXPECT_LONG __builtin_expect
 
 #else  /* __GNUC__ */
-
-#ifdef __clang__
-#define HAS_PRAGMA_GCC_DIAGNOSTIC
-#endif
 
 #ifdef __has_attribute
 #if __has_attribute(__noreturn__)
