@@ -43,13 +43,15 @@ struct eris_thread {
 };
 
 struct eris_frame {
-    size_t num_regs;
     /* Points to the bottom of our chunk of the register stack. */
     val_t *regs;
+    /* How many registers are we using? Needed for push/pop/etc and for GC. */
+    size_t num_regs;
     /* Points to our frame on the control stack, which is just below the frame
      * we return into. */
-    void *frames;
+    frame_t *frame;
     eris_thread_t *thread;
+    /* FIXME: need tailcall info */
 };
 
 

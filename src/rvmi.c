@@ -88,7 +88,7 @@ int main(int argc, char **argv)
 {
 #define NUM_CONTS 20
     val_t stack[100];
-    call_frame_t cont[NUM_CONTS];
+    frame_t cont[NUM_CONTS];
 
     poison(stack, 0xdeadbeef, sizeof(stack));
     poison(cont, 0xcafebabe, sizeof(cont));
@@ -97,9 +97,9 @@ int main(int argc, char **argv)
 
     /* Initialize frame. */
     /* NUM_CONTS-2 to leave a poisoned frame at the top */
-    call_frame_t *frame = &cont[NUM_CONTS-2];
+    frame_t *frame = &cont[NUM_CONTS-2];
     frame->tag = FRAME_CALL;
-    frame->func = OBJ_AS_CLOSURE(bar);
+    frame->data.eris_call.func = OBJ_AS_CLOSURE(bar);
 
     vm_state_t state = ((vm_state_t) {
             .ip = bar_code,

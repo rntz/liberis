@@ -8,6 +8,8 @@
 #include "vm.h"
 #include "vm_util.h"
 
+#define FRAME(f) (f)->data.eris_call
+
 /* Helper functions for call instructions. */
 /* Does arity checking and conses excess variadic arguments. */
 static inline
@@ -87,7 +89,7 @@ bool do_call(vm_state_t *S,
 
         if (!tail_call) {
             /* Update our IP on control stack, so callee returns correctly. */
-            S->frame->ip = S->ip;
+            FRAME(S->frame).ip = S->ip;
 
             /* Push callee's stack frame. Remember, control stack grows down. */
             --S->frame;
@@ -110,7 +112,7 @@ bool do_call(vm_state_t *S,
         }
 
         /* Update frame. */
-        S->frame->func = func;
+        FRAME(S->frame).func = func;
 
         /* Jump into the function. */
         S->func = func;
@@ -198,7 +200,7 @@ void eris_vm_run(vm_state_t *state)
 
       case OP_LOAD_INT: {
           /* Allocating; update control frame IP. */
-          S.frame->ip = S.ip;
+          FRAME(S.frame).ip = S.ip;
           obj_t *obj = NEW(num);
           num_t *num = OBJ_CONTENTS(num, obj);
           num->tag = NUM_INTPTR;
@@ -316,9 +318,9 @@ void eris_vm_run(vm_state_t *state)
           /* We determine how far to pop the stack by looking at the argument
            * offset given in the CALL instruction that set up our frame.
            */
-          S.regs -= VM_ARG2(*S.frame->ip);
-          S.ip = S.frame->ip + 1; /* +1 to skip past the call instr. */
-          S.func = S.frame->func;
+          S.regs -= VM_ARG2(*FRAME(S.frame).ip);
+          S.ip = FRAME(S.frame).ip + 1; /* +1 to skip past the call instr. */
+          S.func = FRAME(S.frame).func;
       }
         break;
 
