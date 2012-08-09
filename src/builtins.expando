@@ -44,9 +44,6 @@ BUILTIN(SEQ_MAKE, 0, true,
         DEST = CONTENTS_VAL(seq_);
     )
 
-/* (SEQ-TABULATE n f) == (SEQ-MAKE (f 0) (f 1) ... (f (- n 1))) */
-BUILTIN(SEQ_TABULATE, 2, false, UNIMPLEMENTED)
-
 /* (SEQ-NTH n s) ==> `n`th element of `s` */
 BUILTIN(SEQ_NTH, 2, false, UNIMPLEMENTED)
 
