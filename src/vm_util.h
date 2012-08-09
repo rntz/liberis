@@ -88,7 +88,7 @@ static inline val_t deref_cell(cell_t *g)
     if (UNLIKELY(!g->val)) {
         /* Cell is undefined. */
         /* TODO: print out symbol name. */
-        eris_die("reference to undefined cell");
+        eris_bug("reference to undefined cell");
     }
     return g->val;
 }

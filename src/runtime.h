@@ -77,13 +77,13 @@ val_t eris_make_bool(eris_vm_t *vm, bool v)
 }
 
 /* Error-raising functions */
-NORETURN void eris_vdie(const char *format, va_list ap);
-NORETURN void eris_die(const char *format, ...);
+NORETURN void eris_vbug(const char *format, va_list ap);
+NORETURN void eris_bug(const char *format, ...);
 
 #if ERIS_RELEASE
 #define IMPOSSIBLE(msg, ...) UNREACHABLE
 #else
-#define IMPOSSIBLE(msg, ...) (eris_die(msg, __VA_ARGS__))
+#define IMPOSSIBLE(msg, ...) (eris_bug(msg, __VA_ARGS__))
 #endif
 
 /* These will probably need adjusting. */

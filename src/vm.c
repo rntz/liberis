@@ -19,7 +19,7 @@ void do_precall(vm_state_t *S, closure_t *func, reg_t offset, nargs_t nargs)
         return;
 
     if (LIKELY(func->proto->variadic)) {
-        eris_die("variadic function calls unimplemented"); /* TODO */
+        eris_bug("variadic function calls unimplemented"); /* TODO */
     }
     else {
         eris_arity_error("arity mismatch");
@@ -50,7 +50,7 @@ void do_builtin(vm_state_t *S, obj_t *obj, reg_t offset, nargs_t nargs)
 #define ARITY_ERROR() eris_arity_error("builtin")
 #define TYPE_ERROR() eris_type_error("builtin")
 #define THREAD S->thread
-#define UNIMPLEMENTED eris_die("builtin %u unimplemented", builtin->op);
+#define UNIMPLEMENTED eris_bug("builtin %u unimplemented", builtin->op);
 
 #include "builtins.expando"
 
