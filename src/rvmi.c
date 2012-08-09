@@ -46,7 +46,7 @@ struct {
     }
 };
 
-obj_t *make_foo(void) { return CONTENTS_OBJ(&foo.closure); }
+closure_t *make_foo(void) { return &foo.closure; }
 
 
 /* bar */
@@ -56,7 +56,7 @@ instr_t bar_code[] = {
     I1(RETURN, 1)
 };
 
-obj_t *make_bar(void)
+closure_t *make_bar(void)
 {
     proto_t *proto = MAKE_WITH(proto, local_funcs, 1);
     *proto = ((proto_t) {
@@ -65,15 +65,15 @@ obj_t *make_bar(void)
             .num_upvals = 1,
             .variadic = false });
 
-    obj_t *foo = make_foo();
-    proto->local_funcs[0] = OBJ_AS_CLOSURE(foo)->proto;
+    closure_t *foo = make_foo();
+    proto->local_funcs[0] = foo->proto;
 
-    obj_t *gfoo = make_cell("foo", OBJ_VAL(foo));
+    obj_t *gfoo = make_cell("foo", CONTENTS_VAL(foo));
 
     closure_t *bar = MAKE_CLOSURE(1);
     bar->proto = proto;
     bar->upvals[0] = OBJ_VAL(gfoo);
-    return CONTENTS_OBJ(bar);
+    return bar;
 }
 
 
@@ -93,19 +93,19 @@ int main(int argc, char **argv)
     poison(stack, 0xdeadbeef, sizeof(stack));
     poison(cont, 0xcafebabe, sizeof(cont));
 
-    obj_t *bar = make_bar();
+    closure_t *bar = make_bar();
 
     /* Initialize frame. */
     /* NUM_CONTS-2 to leave a poisoned frame at the top */
     frame_t *frame = &cont[NUM_CONTS-2];
     frame->tag = FRAME_CALL;
-    frame->data.eris_call.func = OBJ_AS_CLOSURE(bar);
+    frame->data.eris_call.func = bar;
 
     vm_state_t state = ((vm_state_t) {
             .ip = bar_code,
             .regs = stack,
             .frame = frame,
-            .func = OBJ_AS_CLOSURE(bar)
+            .func = bar
     });
 
     eris_vm_run(&state);
