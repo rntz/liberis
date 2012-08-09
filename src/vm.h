@@ -60,19 +60,23 @@ enum frame_tag {
     /* FRAME_HANDLE, */
 };
 
+/* FIXME: we currently assume that call_frame_t and c_call_frame_t have the same
+ * alignment constraints. (Otherwise the naive way we do frame pointer math
+ * doesn't work out.)
+ *
+ * This seems like a reasonable assumption, given that they contain pointers,
+ * which are generally aligned most strictly. Should check this, though.
+ */
 typedef struct {
     frame_tag_t tag;
-    union {
-        struct {
-            instr_t *ip;
-            closure_t *func;
-        } eris_call;
-        struct {
-            c_closure_t *func;
-            size_t num_regs;
-        } c_call;
-    } data;
-} frame_t;
+    instr_t *ip;
+    closure_t *func;
+} call_frame_t;
+
+typedef struct {
+    frame_tag_t tag;
+    c_closure_t *func;
+} c_call_frame_t;
 
 typedef struct {
     instr_t *ip;
@@ -89,7 +93,7 @@ typedef struct {
      *    course, we handle this conservatively and update whenever we /might/
      *    trigger GC (eg. when we heap-allocate).
      */
-    frame_t *frame;
+    call_frame_t *frame;
     closure_t *func;
     eris_thread_t *thread;
 } vm_state_t;

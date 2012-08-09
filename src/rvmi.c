@@ -16,8 +16,7 @@
 
 obj_t *make_cell(char *name, val_t v)
 {
-    /* FIXME: bad arguments */
-    cell_t *g = MAKE(NULL, NULL, cell);
+    cell_t *g = MAKE(cell);
     g->val = v;
     g->symbol = NULL;             /* TODO: use `name' for this. */
     (void) name;
@@ -59,8 +58,7 @@ instr_t bar_code[] = {
 
 obj_t *make_bar(void)
 {
-    /* FIXME. */
-    proto_t *proto = MAKE_WITH(NULL, NULL, proto, local_funcs, 1);
+    proto_t *proto = MAKE_WITH(proto, local_funcs, 1);
     *proto = ((proto_t) {
             .code = bar_code,
             .num_args = 0,
@@ -68,12 +66,11 @@ obj_t *make_bar(void)
             .variadic = false });
 
     obj_t *foo = make_foo();
-    /* FIXME */
-    proto->local_funcs[0] = OBJ_AS_CLOSURE(NULL,NULL, foo)->proto;
+    proto->local_funcs[0] = OBJ_AS_CLOSURE(foo)->proto;
 
     obj_t *gfoo = make_cell("foo", OBJ_VAL(foo));
 
-    closure_t *bar = MAKE_CLOSURE(NULL,NULL, 1);
+    closure_t *bar = MAKE_CLOSURE(1);
     bar->proto = proto;
     bar->upvals[0] = OBJ_VAL(gfoo);
     return CONTENTS_OBJ(bar);
@@ -91,7 +88,7 @@ int main(int argc, char **argv)
 {
 #define NUM_CONTS 20
     val_t stack[100];
-    frame_t cont[NUM_CONTS];
+    call_frame_t cont[NUM_CONTS];
 
     poison(stack, 0xdeadbeef, sizeof(stack));
     poison(cont, 0xcafebabe, sizeof(cont));
@@ -100,16 +97,15 @@ int main(int argc, char **argv)
 
     /* Initialize frame. */
     /* NUM_CONTS-2 to leave a poisoned frame at the top */
-    frame_t *frame = &cont[NUM_CONTS-2];
+    call_frame_t *frame = &cont[NUM_CONTS-2];
     frame->tag = FRAME_CALL;
-    /* FIXME */
-    frame->data.eris_call.func = OBJ_AS_CLOSURE(NULL,NULL, bar);
+    frame->func = OBJ_AS_CLOSURE(bar);
 
     vm_state_t state = ((vm_state_t) {
             .ip = bar_code,
             .regs = stack,
             .frame = frame,
-            .func = OBJ_AS_CLOSURE(NULL, NULL, bar) /* FIXME */
+            .func = OBJ_AS_CLOSURE(bar)
     });
 
     eris_vm_run(&state);

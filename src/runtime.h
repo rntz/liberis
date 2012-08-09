@@ -43,32 +43,23 @@ struct eris_thread {
 };
 
 struct eris_frame {
+    size_t num_regs;
     /* Points to the bottom of our chunk of the register stack. */
     val_t *regs;
-    /* How many registers are we using? Needed for push/pop/etc and for GC. */
-    size_t num_regs;
     /* Points to our frame on the control stack, which is just below the frame
      * we return into. */
-    frame_t *frame;
+    void *frames;
     eris_thread_t *thread;
-    /* FIXME: need tailcall info */
 };
 
 
-/* Core runtime functions
- *
- * Many of these functions take as their first arguments:
- *
- *     eris_thread_t *T, void *F, ...
- *
- * `F` points to the current (ie. bottom) frame on the control stack. Together,
- * T & F provide the information necessary to perform a GC cycle or unwind the
- * stack due to an exception.
- */
+/* Core runtime functions */
+
+/* These may need to be adjusted to take our state, to handle OOM exceptions. */
 
 /* You pass the size of the object /sans/ tag. */
-obj_t *eris_new(eris_thread_t *T, void *F, shape_t *tag, size_t size);
-void eris_free(eris_thread_t *T, void *F, obj_t *obj);
+obj_t *eris_new(shape_t *tag, size_t objsize);
+void eris_free(obj_t *obj);
 
 /* Convenience functions. */
 static inline
@@ -83,18 +74,18 @@ val_t eris_make_bool(eris_vm_t *vm, bool v)
     return v ? eris_make_true(vm) : eris_make_false(vm);
 }
 
-/* These will probably need adjusting. */
-NORETURN void eris_type_error(eris_thread_t *T, void *F, char *fmt, ...);
-NORETURN void eris_arity_error(eris_thread_t *T, void *F, char *fmt, ...);
-
-/* Bug checking. */
-NORETURN void eris_bug(const char *format, ...);
-NORETURN void eris_vbug(const char *format, va_list ap);
+/* Error-raising functions */
+NORETURN void eris_vdie(const char *format, va_list ap);
+NORETURN void eris_die(const char *format, ...);
 
 #if ERIS_RELEASE
 #define IMPOSSIBLE(msg, ...) UNREACHABLE
 #else
-#define IMPOSSIBLE(msg, ...) (eris_bug(msg, __VA_ARGS__))
+#define IMPOSSIBLE(msg, ...) (eris_die(msg, __VA_ARGS__))
 #endif
+
+/* These will probably need adjusting. */
+NORETURN void eris_type_error(char *x, ...);
+NORETURN void eris_arity_error(char *x, ...);
 
 #endif

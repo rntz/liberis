@@ -22,34 +22,29 @@
 
 #define VAL_IS_NIL(v) OBJ_IS_NIL(VAL_OBJ(v))
 
-#define OBJ_CHECK_TAG(T,F, shape, obj)          \
-    obj_check_tag(T,F, SHAPE_TAG(shape), (obj))
-
-static inline
-obj_t *obj_check_tag(eris_thread_t *T, void *F, shape_t *tag, obj_t *obj)
+#define OBJ_CHECK_TAG(shape, obj) obj_check_tag(SHAPE_TAG(shape), (obj))
+static inline obj_t *obj_check_tag(shape_t *tag, obj_t *obj)
 {
     assert (obj);
     if (UNLIKELY(obj->tag != tag))
-        eris_type_error(T, F, "expected %p, got %p", tag, obj->tag);
+        eris_type_error("expected %p, got %p", tag, obj->tag);
     return obj;
 }
 
-#define OBJ_AS(T,F, shape, obj)                         \
-    OBJ_CONTENTS(shape, OBJ_CHECK_TAG(T,F, shape, obj))
-#define VAL_AS(T,F, shape, value) OBJ_AS(T,F, shape, VAL_OBJ(value))
+#define OBJ_AS(shape, obj) OBJ_CONTENTS(shape, OBJ_CHECK_TAG(shape, obj))
+#define VAL_AS(shape, value) OBJ_AS(shape, VAL_OBJ(value))
 
-#define OBJ_AS_CLOSURE(T,F, o) OBJ_AS(T,F, closure, o)
+#define OBJ_AS_CLOSURE(o) OBJ_AS(closure, o)
 
-#define VAL_AS_CLOSURE(T,F, v) VAL_AS(T,F, closure, v)
-#define VAL_AS_STRING(T,F, v) VAL_AS(T,F, string, v)
+#define VAL_AS_CLOSURE(v) VAL_AS(closure, v)
+#define VAL_AS_STRING(v) VAL_AS(string, v)
 
 
 /* This is to be used only in cases where we statically know that v is a "cell".
  * TODO: explain cells somewhere in docs & reference here. */
 static inline cell_t *get_cell(val_t v)
 {
-    assert (OBJ_ISA(cell, VAL_OBJ(v)));
-    return OBJ_CONTENTS(cell, VAL_OBJ(v));
+    return OBJ_AS(cell, (obj_t*) v);
 }
 
 static inline val_t deref_cell(cell_t *g)
@@ -57,7 +52,7 @@ static inline val_t deref_cell(cell_t *g)
     if (UNLIKELY(!g->val)) {
         /* Cell is undefined. */
         /* TODO: print out symbol name. */
-        eris_bug("reference to undefined cell");
+        eris_die("reference to undefined cell");
     }
     return g->val;
 }
@@ -70,23 +65,22 @@ static inline val_t deref_cell(cell_t *g)
 #define NELEM_SIZE(shape, elem_mem, nelems)             \
     (nelems * membersize(SHAPE_TYPE(shape), elem_mem[0]))
 
-#define NEW_PLUS(T,F, shape, extra)                             \
-    eris_new(T,F, SHAPE_TAG(shape), SHAPE_SIZE(shape, extra))
+#define NEW_PLUS(shape, extra)                          \
+    eris_new(SHAPE_TAG(shape), SHAPE_SIZE(shape, extra))
 
-#define NEW_WITH(T,F, shape, elem_mem, nelems)                  \
-    NEW_PLUS(T,F, shape, NELEM_SIZE(shape, elem_mem, nelems))
+#define NEW_WITH(shape, elem_mem, nelems)                       \
+    NEW_PLUS(shape, NELEM_SIZE(shape, elem_mem, nelems))
 
-#define NEW(T,F, shape) NEW_PLUS(T,F, shape, 0)
+#define NEW(shape) NEW_PLUS(shape, 0)
 
-#define MAKE_PLUS(T,F, shape, extra)                    \
-    OBJ_CONTENTS(shape, NEW_PLUS(T,F, shape, extra))
+#define MAKE_PLUS(shape, extra) OBJ_CONTENTS(shape, NEW_PLUS(shape, extra))
 
-#define MAKE_WITH(T,F, shape, elem_mem, nelems)                 \
-    MAKE_PLUS(T,F, shape, NELEM_SIZE(shape, elem_mem, nelems))
+#define MAKE_WITH(shape, elem_mem, nelems)                      \
+    MAKE_PLUS(shape, NELEM_SIZE(shape, elem_mem, nelems))
 
-#define MAKE(T,F, shape) MAKE_PLUS(T,F, shape, 0)
+#define MAKE(shape) MAKE_PLUS(shape, 0)
 
-#define MAKE_CLOSURE(T,F, nupvals) MAKE_WITH(T,F, closure, upvals, nupvals)
-#define MAKE_SEQ(T,F, nelems) MAKE_WITH(T,F, seq, data, nelems)
+#define MAKE_CLOSURE(nupvals) MAKE_WITH(closure, upvals, nupvals)
+#define MAKE_SEQ(nelems) MAKE_WITH(seq, data, nelems)
 
 #endif
