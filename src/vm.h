@@ -15,7 +15,18 @@
 #define VM_ARG2(instr)        ((arg_t)((instr) >> 16))
 #define VM_ARG3(instr)        ((arg_t)((instr) >> 24))
 #define VM_ARGN(instr, n)     ((arg_t)((instr) >> (8*(n))))
-#define VM_LONGARG2(instr)    ((longarg_t)((instr) >> 16))
+#define VM_LONGARG(instr)     ((longarg_t)((instr) >> 16))
+
+/* NOT C99 SPEC: unsigned to signed integer conversion is implementation-defined
+ * or may raise a signal when the unsigned value is not representable in the
+ * signed target type. We depend on 2's-complement representation, with this
+ * cast being a no-op.
+ *
+ * TODO: It should be possible to fix this by explicitly doing the appropriate
+ * modulo arithmetic, and if gcc & clang are smart enough this will compile into
+ * a nop on x86(-64). Should test this, though.
+ */
+#define VM_SIGNED_LONGARG(instr) ((signed_longarg_t) VM_LONGARG(instr))
 
 /* Type checkers and converters.
  *

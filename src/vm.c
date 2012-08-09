@@ -24,7 +24,7 @@ void do_cond(vm_state_t *S, bool cond)
         /* Make the following jump. (1 + ...) because the current IP is 1
          * behind that of the jump instruction.
          */
-        S->ip += 1 + (jump_offset_t) VM_LONGARG2(*(S->ip + 1));
+        S->ip += 1 + VM_SIGNED_LONGARG(*(S->ip + 1));
 }
 
 
@@ -67,7 +67,8 @@ void eris_vm_run(vm_state_t *state)
 #define ARG1 VM_ARG1(instr)
 #define ARG2 VM_ARG2(instr)
 #define ARG3 VM_ARG3(instr)
-#define LONGARG2 VM_LONGARG2(instr)
+#define LONGARG VM_LONGARG(instr)
+#define SIGNED_LONGARG VM_SIGNED_LONGARG(instr)
 
 #define UPVAL(upval) (S.func->upvals[(upval)])
 #define CELL(upval) (deref_cell(get_cell(UPVAL(upval))))
@@ -85,8 +86,7 @@ void eris_vm_run(vm_state_t *state)
           num_t *num;
           NEW_NUM(&num);
           num->tag = NUM_INTPTR;
-          /* FIXME: this will never produce a negative number! */
-          num->data.v_intptr = LONGARG2;
+          num->data.v_intptr = SIGNED_LONGARG;
           REG(ARG1) = CONTENTS_VAL(num);
           ++S.ip;
       }
@@ -270,7 +270,7 @@ void eris_vm_run(vm_state_t *state)
          * appropriate modulo arithmetic, and if gcc & clang are smart enough
          * this will compile into a nop on x86(-64). Should test this, though.
          */
-        S.ip += (jump_offset_t) LONGARG2;
+        S.ip += SIGNED_LONGARG;
         break;
 
       case OP_RETURN: {

@@ -28,7 +28,7 @@ typedef  uint32_t   instr_t;
 typedef   uint8_t   op_t;
 typedef   uint8_t   arg_t;
 typedef  uint16_t   longarg_t;
-typedef   int16_t   jump_offset_t;
+typedef   int16_t   signed_longarg_t;
 
 typedef uintptr_t   val_t;
 typedef   uint8_t   tag_t;
