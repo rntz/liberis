@@ -11,22 +11,7 @@
  *
  * - variadic: "true" if the builtin is variadic, "false" otherwise.
  *
- * - __VA_ARGS__: code that evaluates the builtin. expects the following macros
- *   to be defined:
- *
- *   - NARGS: number of arguments
- *   - ARG(i): ith argument
- *   - DEST: location to put the result value in.
- *   - ARITY_ERROR(): signals an arity error.
- *   - TYPE_ERROR(): signals a type error.
- *   - THREAD: pointer to the current eris_thread_t
- *   - UNIMPLEMENTED: signals the builtin is unimplemented.
- *
- *   TODO: TYPE_ERROR (and maybe ARITY_ERROR?) should take args to indicate what
- *   failed.
- *
- *   Headers that must be included for code to work:
- *   - vm_util.h
+ * - __VA_ARGS__: code that evaluates the builtin. specific to vm.c.
  */
 
 #ifndef BUILTIN
@@ -37,9 +22,11 @@
 /* Sequences */
 /* (SEQ-MAKE x0 x1 ... xn) == `(,x0 ,x1 ... ,xn) */
 BUILTIN(SEQ_MAKE, 0, true,
-        seq_t *seq_ = MAKE_SEQ(NARGS);
-        seq_->len = NARGS;
-        for (size_t i = 0; i < NARGS; ++i) {
+        seq_t *seq_;
+        if (!new_seq(&seq_, nargs, S.thread, S.frame)) {
+            goto raise;
+        }
+        for (size_t i = 0; i < nargs; ++i) {
             seq_->data[i] = ARG(i);
         }
         DEST = CONTENTS_VAL(seq_);
@@ -66,7 +53,7 @@ BUILTIN(RAW_EQ, 2, false, UNIMPLEMENTED)
 BUILTIN(NUM_EQ, 2, false, UNIMPLEMENTED)
 BUILTIN(SYM_EQ, 2, false, UNIMPLEMENTED)
 BUILTIN(IS_NIL, 1, false,
-        DEST = eris_make_bool(THREAD->vm, ARG(0) == eris_nil);
+        DEST = eris_make_bool(S.thread->vm, ARG(0) == eris_nil);
     )
 
 

@@ -1,4 +1,4 @@
-#include "vm.h"
+#include "types.h"
 
 #define SHAPE(shape)                             \
     shape_t eris_shape_##shape = {               \

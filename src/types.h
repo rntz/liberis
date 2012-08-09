@@ -1,10 +1,17 @@
 #ifndef _TYPES_H_
 #define _TYPES_H_
 
-#include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
 #include <gmp.h>
+
+/* We use Judy arrays for various things. Not because we've actually determined
+ * that we need the speed and memory characteristics of Judy arrays, just
+ * because they present a nice, simple interface.
+ */
+#include <Judy.h>
 
 #include <eris/eris.h>
 
@@ -32,8 +39,39 @@ typedef   uint8_t   reg_t;
 typedef   uint8_t   nargs_t;
 typedef   uint8_t   upval_t;
 
+/* Opcode values. Note that this is not the type used to represent opcodes in
+ * actual bytecode (that's op_t from types.h). It just defines some nice
+ * integral constants for us, and lets us cast to this type when we want to be
+ * sure we've handled all the branches in a switch.
+ */
+enum op {
+    OP_MOVE, OP_LOAD_INT, OP_LOAD_UPVAL, OP_LOAD_CELL,
+
+    /* unconditional control flow operators */
+    OP_CALL_CELL, OP_CALL_REG, OP_TAILCALL_CELL, OP_TAILCALL_REG,
+    OP_JUMP, OP_RETURN,
+
+    /* conditional control flow operators */
+    OP_IF, OP_IFNOT,
+
+    /* TODO: exceptions */
+    /* /\* exceptional control flow operators *\/
+     * OP_RAISE,
+     * /\* NB. must precede an OP_CALL_* instr. *\/
+     * OP_HANDLE, */
+
+    /* miscellany */
+    OP_CLOSE,
+};
+
+enum builtin_op {
+#define BUILTIN(name, ...) BOP_##name,
+#include "builtins.expando"
+#undef BUILTIN
+};
+
 
-/* Data structures. */
+/* Eris object structures */
 typedef struct {
     const char *name;           /* a C string, null-byte and all. */
     /* TODO: gc information. */
@@ -51,8 +89,6 @@ typedef struct {
     typedef struct name name##_t;               \
     struct name
 
-
-/* Types after this point should only exist embedded inside of an obj_t. */
 extern shape_t eris_shape_nil;
 extern const val_t eris_nil;
 
@@ -111,14 +147,16 @@ SHAPE(seq) {
 };
 
 /* NB. differ from seqs in tha they are mutable */
+/* TODO: these should be extensible arrays with a capacity & size. */
 SHAPE(vec) {
     size_t len;
     val_t data[];
 };
 
-/* Symbols are just interned strings. */
-extern shape_t eris_shape_symbol;
-typedef string_t symbol_t;
+SHAPE(symbol) {
+    size_t len;
+    const char data[];
+};
 
 SHAPE(cell) {
     /* If this is 0/NULL, the cell is undefined. */
@@ -130,4 +168,84 @@ SHAPE(cell) {
 /* clean up our macros */
 #undef SHAPE
 
+
+/* VM state structures */
+typedef uint8_t frame_tag_t;
+enum frame_tag {
+    FRAME_CALL, FRAME_C_CALL,
+    /* TODO: exceptions */
+    /* FRAME_HANDLE, */
+};
+
+typedef struct {
+    frame_tag_t tag;
+    union {
+        struct {
+            instr_t *ip;
+            closure_t *func;
+        } eris_call;            /* TODO: rename "call" */
+        struct {
+            c_closure_t *func;
+            size_t num_regs;
+        } c_call;
+    } data;
+} frame_t;
+
+typedef struct {
+    instr_t *ip;
+    /* Index into our frame on the stack of registers. This stack grows up. */
+    val_t *regs;
+    /* Stack of control/return frames. This stack grows down. Points to _our_
+     * control frame, just below the frame of the function we return into. Note
+     * that our control frame's IP only needs to be brought up-to-date
+     * immediately before either:
+     *
+     * 1. a (non-TAIL) CALL instr (so that it knows where to return to)
+     *
+     * 2. the instruction triggers GC (so that precise GC based on IP works). of
+     *    course, we handle this conservatively and update whenever we /might/
+     *    trigger GC (eg. when we heap-allocate).
+     */
+    frame_t *frame;
+    closure_t *func;
+    eris_thread_t *thread;
+} vm_state_t;
+
+
+/* Runtime data structures */
+struct eris_vm {
+    /* TODO: GC metadata. */
+    /* Judy array of interned symbols. */
+    Pvoid_t symbols;
+    val_t symbol_t;         /* the "t" symbol, used as a canonical true value */
+    /* Linked list of threads. */
+    eris_thread_t *threads;
+};
+
+struct eris_thread {
+    eris_vm_t *vm;
+    /* Whether a frame has been created on this thread and is in use. */
+    bool in_use;
+    /* `regs' points to bottom of register stack. */
+    val_t *regs;
+    /* `frames' points to top of frame stack. dereferencing it is disallowed. */
+    void *frames;
+    /* TODO: GC metadata (eg. size of register & frame stacks). */
+    /* Next thread on thread list. */
+    eris_thread_t *next;
+};
+
+struct eris_frame {
+    /* Points to the bottom of our chunk of the register stack. */
+    val_t *regs;
+    /* How many registers are we using? Needed for push/pop/etc and for GC. */
+    size_t num_regs;
+    /* Points to our frame on the control stack, which is just below the frame
+     * we return into. */
+    frame_t *frame;
+    eris_thread_t *thread;
+    /* FIXME: need tailcall info */
+};
+
+
 #endif

@@ -5,15 +5,22 @@
 
 #include "runtime.h"
 
-obj_t *eris_new(shape_t *tag, size_t size)
+bool eris_new(obj_t **out,
+              eris_thread_t *thread, frame_t *frame,
+              shape_t *tag, size_t size)
 {
     assert (size >= sizeof(obj_t)); /* sanity/precondition */
     obj_t *obj = malloc(size);
-    if (!obj)
-        eris_bug("OOM allocating object with tag %p", tag);
+    if (!obj) {
+        assert(0 && "malloc failed"); /* FIXME: remove */
+        return false;
+    }
     assert (obj);
     obj->tag = tag;
-    return obj;
+    *out = obj;
+    return true;
+
+    (void) thread; (void) frame;
 }
 
 void eris_free(obj_t *obj)

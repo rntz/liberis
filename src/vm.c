@@ -5,141 +5,12 @@
 
 #include "misc.h"
 #include "runtime.h"
+#include "types.h"
 #include "vm.h"
-#include "vm_util.h"
 
 #define FRAME(f) (f)->data.eris_call
 
-/* Helper functions for call instructions. */
-/* Does arity checking and conses excess variadic arguments. */
-static inline
-void do_precall(vm_state_t *S, closure_t *func, reg_t offset, nargs_t nargs)
-{
-    if (LIKELY(nargs == func->proto->num_args))
-        return;
-
-    if (LIKELY(func->proto->variadic)) {
-        eris_bug("variadic function calls unimplemented"); /* TODO */
-    }
-    else {
-        eris_arity_error("arity mismatch");
-    }
-    (void) S; (void) offset;    /* unused */
-}
-
-static inline
-void do_builtin(vm_state_t *S, obj_t *obj, reg_t offset, nargs_t nargs)
-{
-    assert (OBJ_ISA(builtin, obj));
-
-    builtin_t *builtin = OBJ_CONTENTS(builtin, obj);
-    if (UNLIKELY(nargs != builtin->num_args) &&
-        (UNLIKELY(!builtin->variadic) || UNLIKELY(nargs < builtin->num_args)))
-    {
-        /* TODO: better error message */
-        eris_arity_error("builtin");
-    }
-
-    switch (builtin->op) {
-#define BUILTIN(name, num_args, variadic, ...)          \
-        case CAT(BOP_,name): { __VA_ARGS__ } break;
-#define NARGS nargs
-#define ARG(i) S->regs[offset+(i)]
-#define DEST S->regs[offset]
-            /* TODO: better error messages */
-#define ARITY_ERROR() eris_arity_error("builtin")
-#define TYPE_ERROR() eris_type_error("builtin")
-#define THREAD S->thread
-#define UNIMPLEMENTED eris_bug("builtin %u unimplemented", builtin->op);
-
-#include "builtins.expando"
-
-#undef UNIMPLEMENTED
-#undef TYPE_ERROR
-#undef ARITY_ERROR
-#undef DEST
-#undef ARG
-#undef NARGS
-#undef BUILTIN
-
-      default: IMPOSSIBLE("unrecognized builtin: %u", builtin->op);
-    }
-    (void) nargs;            /* unused due to unimplemented variadic builtins */
-}
-
-/* Returns true iff we should next execute an OP_RETURN to simulate a
- * tailcall. */
-static inline
-bool do_call(vm_state_t *S,
-             bool tail_call,
-             val_t funcv,
-             reg_t offset,
-             nargs_t nargs)
-{
-    obj_t *obj = VAL_OBJ(funcv);
-    shape_t *tag = obj->tag;
-
-    /* Calling closures */
-    if (LIKELY(tag == SHAPE_TAG(closure))) {
-        closure_t *func = OBJ_CONTENTS(closure, obj);
-        do_precall(S, func, offset, nargs);
-
-        /* TODO: think very hard about what happens on control stack
-         * overflow. */
-
-        if (!tail_call) {
-            /* Update our IP on control stack, so callee returns correctly. */
-            FRAME(S->frame).ip = S->ip;
-
-            /* Push callee's stack frame. Remember, control stack grows down. */
-            --S->frame;
-            S->frame->tag = FRAME_CALL;
-            /* No need to set frame's IP; callee will do that as necessary.
-             * frame's func gets set unconditionally, below. */
-
-            /* Shift our view of the register stack so our args are in the right
-             * place. */
-            S->regs += offset;
-        }
-        else {
-            /* No need to update frame's IP; callee will do that as necessary.
-             * No need to update frame's tag; already has appropriate value.
-             * frame's func gets set unconditionally, below.
-             */
-
-            /* Move down arguments into appropriate slots. */
-            memmove(S->regs, S->regs + offset, sizeof(val_t) * nargs);
-        }
-
-        /* Update frame. */
-        FRAME(S->frame).func = func;
-
-        /* Jump into the function. */
-        S->func = func;
-        S->ip = S->func->proto->code;
-
-        return false;            /* no OP_RETURN needed */
-    }
-    /* Calling builtins */
-    else if (LIKELY(tag == SHAPE_TAG(builtin))) {
-        do_builtin(S, obj, offset, nargs);
-        /* "Tail calling" a built-in is emulated using OP_RETURN. */
-        return tail_call;
-    }
-    /* Calling C closures */
-    else if (LIKELY(tag == SHAPE_TAG(c_closure))) {
-        assert(0 && "unimplemented"); /* TODO */
-        /* "Tail calling" a C closure is emulated using OP_RETURN. */
-        return tail_call;
-    }
-    /* Calling everything else */
-    else {
-        eris_type_error("invalid function object");
-    }
-
-    UNREACHABLE;
-}
-
+/* Helper functions. */
 static inline
 void do_cond(vm_state_t *S, bool cond)
 {
@@ -159,11 +30,6 @@ void do_cond(vm_state_t *S, bool cond)
 
 /* The main loop */
 
-/* TODO: currently we do no cleaning-up of the stack, ever. unless we annotate
- * functions with live ranges for registers, this makes gc extra-conservative in
- * a very unpredictable way. highly undesirable, could cause long-lived garbage.
- */
-
 /* TODO: Use computed gotos if available. See femtolisp's flisp.c for a good way
  * to do this.
  */
@@ -172,6 +38,12 @@ void eris_vm_run(vm_state_t *state)
 {
     vm_state_t S = *state;
 #define REG(n)      (S.regs[n])
+
+    if (0) {
+      raise:
+        /* TODO: Stack-unwinding code */
+        assert (0 && "unimplemented");
+    }
 
     /* The ((void) 0)s that you see in the following code are garbage to appease
      * the C99 spec, which allows only that a _statement_, not a _declaration_,
@@ -186,7 +58,6 @@ void eris_vm_run(vm_state_t *state)
 #define ARG2 VM_ARG2(instr)
 #define ARG3 VM_ARG3(instr)
 #define LONGARG2 VM_LONGARG2(instr)
-#define DEST REG(ARG1)
 
 #define UPVAL(upval) (S.func->upvals[(upval)])
 #define CELL(upval) (deref_cell(get_cell(UPVAL(upval))))
@@ -194,29 +65,31 @@ void eris_vm_run(vm_state_t *state)
     /* TODO: order cases by frequency. */
     switch ((enum op) OP) {
       case OP_MOVE:
-        DEST = REG(ARG2);
+        REG(ARG1) = REG(ARG2);
         ++S.ip;
         break;
 
       case OP_LOAD_INT: {
           /* Allocating; update control frame IP. */
           FRAME(S.frame).ip = S.ip;
-          obj_t *obj = NEW(num);
-          num_t *num = OBJ_CONTENTS(num, obj);
+          num_t *num;
+          if (!new_num(&num, S.thread, S.frame))
+              goto raise;       /* TODO */
           num->tag = NUM_INTPTR;
+          /* FIXME: this will never produce a negative number! */
           num->data.v_intptr = LONGARG2;
-          DEST = OBJ_VAL(obj);
+          REG(ARG1) = CONTENTS_VAL(num);
           ++S.ip;
       }
         break;
 
       case OP_LOAD_UPVAL:
-        DEST = UPVAL(ARG2);
+        REG(ARG1) = UPVAL(ARG2);
         ++S.ip;
         break;
 
       case OP_LOAD_CELL:
-        DEST = CELL(ARG2);
+        REG(ARG1) = CELL(ARG2);
         ++S.ip;
         break;
 
@@ -250,37 +123,132 @@ void eris_vm_run(vm_state_t *state)
 #define REG_FUNC REG(ARG1)
 
         {
-            val_t func;
+            val_t funcval;
             bool tail_call;
 
           case OP_CALL_CELL:
-            func = CELL_FUNC;
+            funcval = CELL_FUNC;
             tail_call = false;
-
-          call:
-            /* We could avoid having do_call return a bool by just requiring
-             * TAILCALL instrs to be followed by RETURN instrs; then do_call can
-             * just increment IP if it wants to run the return instr. I'm not
-             * sure whether this would gain us anything, though.
-             */
-            if (UNLIKELY(do_call(&S, tail_call, func, ARG2, ARG3)))
-                goto op_return;
-            break;
+            goto call;
 
           case OP_CALL_REG:
-            func = REG_FUNC;
+            funcval = REG_FUNC;
             tail_call = false;
             goto call;
 
           case OP_TAILCALL_CELL:
-            func = CELL_FUNC;
+            funcval = CELL_FUNC;
             tail_call = true;
             goto call;
 
           case OP_TAILCALL_REG:
-            func = REG_FUNC;
+            funcval = REG_FUNC;
             tail_call = true;
             goto call;
+
+          call: (void) 0;
+            obj_t *funcobj = VAL_OBJ(funcval);
+            reg_t offset = ARG2;
+            nargs_t nargs = ARG3;
+
+            /* Calling closures */
+            if (LIKELY(funcobj->tag == SHAPE_TAG(closure))) {
+                closure_t *func = OBJ_CONTENTS(closure, funcobj);
+
+                /* TODO: think very hard about what happens on control stack
+                 * overflow. */
+
+                /* Check arity. */
+                if (UNLIKELY(nargs != func->proto->num_args)) {
+                    if (LIKELY(func->proto->variadic)) {
+                        /* TODO */
+                        eris_bug("variadic function calls unimplemented");
+                    }
+                    else {
+                        eris_arity_error("arity mismatch");
+                    }
+                }
+
+                if (!tail_call) {
+                    /* Update our IP on control stack, so callee returns
+                     * correctly. */
+                    FRAME(S.frame).ip = S.ip;
+
+                    /* Push callee's stack frame. Remember, control stack grows
+                     * down. */
+                    --S.frame;
+                    S.frame->tag = FRAME_CALL;
+                    /* No need to set frame's IP; callee handles that.
+                     * frame's func gets set unconditionally, below. */
+
+                    /* Shift our view of the register stack so our args are in
+                     * the right place. */
+                    S.regs += offset;
+                }
+                else {     /* tail_call is true */
+                    /* No need to update frame's IP; callee handles that.
+                     * No need to update frame's tag; already FRAME_CALL.
+                     * frame's func gets set unconditionally, below.
+                     */
+
+                    /* Move down arguments into appropriate slots. */
+                    memmove(S.regs, S.regs + offset, sizeof(val_t) * nargs);
+                }
+
+                /* Update frame. */
+                FRAME(S.frame).func = func;
+
+                /* Jump into the function. */
+                S.func = func;
+                S.ip = S.func->proto->code;
+            }
+            /* Calling builtins */
+            else if (LIKELY(funcobj->tag == SHAPE_TAG(builtin))) {
+                builtin_t *builtin = OBJ_CONTENTS(builtin, funcobj);
+                if (UNLIKELY(nargs != builtin->num_args)
+                    && (UNLIKELY(!builtin->variadic)
+                        || UNLIKELY(nargs < builtin->num_args)))
+                {
+                    /* TODO: better error message */
+                    eris_arity_error("builtin");
+                }
+
+                switch (builtin->op) {
+#define BUILTIN(name, num_args, variadic, ...)                  \
+                    case CAT(BOP_,name): { __VA_ARGS__ } break;
+#define ARG(i)  S.regs[offset+(i)]
+#define DEST    S.regs[offset]
+                                /* TODO: better error messages */
+#define UNIMPLEMENTED eris_bug("builtin %u unimplemented", builtin->op);
+
+#include "builtins.expando"
+
+#undef UNIMPLEMENTED
+#undef DEST
+#undef ARG
+#undef BUILTIN
+
+                  default: IMPOSSIBLE("unrecognized builtin: %u", builtin->op);
+                }
+
+                /* Incrementing IP works even if tail_call is true, since then
+                 * next instr is guaranteed to be an OP_RETURN. */
+                ++S.ip;
+            }
+            /* Calling C closures */
+            else if (LIKELY(funcobj->tag == SHAPE_TAG(c_closure))) {
+                assert(0 && "unimplemented"); /* TODO */
+                /* TODO: what if the C func calls eris_c_tailcall? */
+                /* Incrementing IP works even if tail_call is true, since then
+                 * next instr is guaranteed to be an OP_RETURN */
+                ++S.ip;
+            }
+            /* Calling everything else */
+            else {
+                eris_type_error("invalid function object");
+            }
+
+            break;
         }
 
 
@@ -298,7 +266,6 @@ void eris_vm_run(vm_state_t *state)
         S.ip += (jump_offset_t) LONGARG2;
         break;
 
-      op_return:
       case OP_RETURN: {
           /* Put the return value where it ought to be. */
           REG(0) = REG(ARG1);
@@ -338,9 +305,10 @@ void eris_vm_run(vm_state_t *state)
           upval_t nupvals_upvals = ARG2; /* # upvals from parent upvals */
           upval_t nupvals_regs = ARG3;   /* # upvals from registers */
           upval_t nupvals = nupvals_upvals + nupvals_regs;
-          obj_t *funcobj = NEW_WITH(closure, upvals, nupvals);
-          DEST = OBJ_VAL(funcobj);
-          closure_t *func = OBJ_CONTENTS(closure, funcobj);
+          closure_t *func;
+          if (!new_closure(&func, nupvals, S.thread, S.frame))
+              goto raise;       /* TODO */
+          REG(ARG1) = CONTENTS_VAL(func);
 
           /* TODO: carefully consider manually optimizing this. */
 

@@ -6,9 +6,9 @@
 #include <eris/eris.h>
 
 #include "misc.h"
-#include "vm.h"
+#include "types.h"
 #include "runtime.h"
-#include "vm_util.h"
+#include "vm.h"
 
 #define I1(OP, X) ((instr_t) (CAT(OP_,OP) ^ ((X) << 8)))
 #define I2(OP, A, B) I1(OP, (A) ^ ((B) << 8))
@@ -16,7 +16,9 @@
 
 obj_t *make_cell(char *name, val_t v)
 {
-    cell_t *g = MAKE(cell);
+    cell_t *g;
+    if (!new_cell(&g, NULL, NULL)) /* FIXME */
+        abort();
     g->val = v;
     g->symbol = NULL;             /* TODO: use `name' for this. */
     (void) name;
@@ -58,7 +60,9 @@ instr_t bar_code[] = {
 
 closure_t *make_bar(void)
 {
-    proto_t *proto = MAKE_WITH(proto, local_funcs, 1);
+    proto_t *proto;
+    if (!new_proto(&proto, 1, NULL, NULL)) /* FIXME */
+        abort();
     *proto = ((proto_t) {
             .code = bar_code,
             .num_args = 0,
@@ -70,7 +74,9 @@ closure_t *make_bar(void)
 
     obj_t *gfoo = make_cell("foo", CONTENTS_VAL(foo));
 
-    closure_t *bar = MAKE_CLOSURE(1);
+    closure_t *bar;
+    if (!new_closure(&bar, 1, NULL, NULL)) /* FIXME */
+        abort();
     bar->proto = proto;
     bar->upvals[0] = OBJ_VAL(gfoo);
     return bar;
