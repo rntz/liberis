@@ -2,8 +2,13 @@
 for MODE in debug release; do
     for CC in gcc clang; do
         for CFLAGS in '' -DIGNORE_COMPILER_FEATURES; do
-            echo ===== running: CFLAGS=$CFLAGS make CC=$CC MODE=$MODE "$@"
-            CFLAGS=$CFLAGS make CC=$CC MODE=$MODE "$@" || exit 1
+            if test -n "$CFLAGS"; then
+                echo ===== running: make CC=$CC MODE=$MODE "$@"
+                make CC=$CC MODE=$MODE "$@" || exit 1
+            else
+                echo ===== running: CFLAGS=$CFLAGS make CC=$CC MODE=$MODE "$@"
+                CFLAGS=$CFLAGS make CC=$CC MODE=$MODE "$@" || exit 1
+            fi
         done
     done
 done
