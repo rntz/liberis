@@ -1,9 +1,20 @@
 * NOW
-1. Finish up eris/eris.h.
 
-2. Modify VM to support calls out to C funcs with the stack-based interface.
-   This may involve putting tags on stack frames. They might need this anyway
-   for exceptions.
+# Figure out how stack unwinding for exceptions will work
+
+Currently I am passing T,F pairs to all funcs that could raise exceptions. This
+works for GC cycles, but *not* for exceptions; stack unwinding needs to be done
+in the main VM loop.
+
+One slightly hackish solution is to have a setjmp() at the beginning of each vm
+loop, and use that to do stack unwinding etc. This... might be OK? Not sure.
+
+Another solution is two interacting code paths: one in the VM loop and one for C
+calls. Anything that could error has to go in the main VM loop proper, not just
+in a function inlined into it. This is complicated but maybe the Right Way to do
+it.
+
+THINK CAREFULLY ABOUT THIS
 
 * SOON
 - Figure out and *write down* a description of the bootstrapping process.
