@@ -18,5 +18,5 @@ SHAPE(symbol);
 SHAPE(cell);
 
 /* Statically allocated values. */
-obj_t eris_nil_obj = { .tag = &eris_shape_nil };
-val_t eris_nil = (val_t) &eris_nil_obj;
+const obj_t eris_nil_obj = { .tag = &eris_shape_nil };
+const val_t eris_nil = (val_t) &eris_nil_obj;
