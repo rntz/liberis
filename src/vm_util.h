@@ -6,24 +6,48 @@
 #include "runtime.h"
 #include "vm.h"
 
-/* Type checkers and converters. */
+/* Type checkers and converters.
+ *
+ * Some of these are uppercase even though they are functions. This is as a
+ * reminder to people using the code, in case we decide to make them macros in
+ * the future.
+ *
+ * Where possible, we make these functions, because:
+ * - It aids debugging
+ * - It makes compiler errors more helpful
+ */
 #define SHAPE_TYPE(shape) shape##_t
 #define SHAPE_TAG(shape) (&eris_shape_##shape)
 
-#define OBJ_VAL(obj) ((val_t) (obj))
-#define VAL_OBJ(val) ((obj_t*) val)
+static inline
+val_t OBJ_VAL(obj_t *o) { return (val_t) o; }
 
-#define OBJ_CONTENTS(shape, obj) ((SHAPE_TYPE(shape)*)((obj)+1))
-#define CONTENTS_OBJ(ptr) (((obj_t*)(ptr)) - 1)
-#define CONTENTS_VAL(ptr) OBJ_VAL(CONTENTS_OBJ(ptr))
+static inline
+obj_t *VAL_OBJ(val_t v){ return (obj_t*) v; }
 
-#define OBJ_ISA(shape, obj) ((obj)->tag == SHAPE_TAG(shape))
-#define OBJ_IS_NIL(obj) OBJ_ISA(nil, obj)
+#define OBJ_CONTENTS(shape, obj) ((SHAPE_TYPE(shape)*)obj_contents(obj))
+static inline
+void *obj_contents(obj_t *obj) { return obj + 1; }
 
-#define VAL_IS_NIL(v) OBJ_IS_NIL(VAL_OBJ(v))
+static inline
+obj_t *CONTENTS_OBJ(void *ptr) { return ((obj_t*)(ptr)) - 1; }
+
+static inline
+val_t CONTENTS_VAL(void *ptr) { return OBJ_VAL(CONTENTS_OBJ(ptr)); }
+
+#define OBJ_ISA(shape, obj) obj_isa(SHAPE_TAG(shape), obj)
+static inline
+bool obj_isa(shape_t *tag, obj_t *obj) { return obj->tag == tag; }
+
+static inline
+bool VAL_IS_NIL(val_t v) { return v == eris_nil; }
+
+static inline
+bool OBJ_IS_NIL(obj_t *o) { return VAL_IS_NIL(OBJ_VAL(o)); }
 
 #define OBJ_CHECK_TAG(shape, obj) obj_check_tag(SHAPE_TAG(shape), (obj))
-static inline obj_t *obj_check_tag(shape_t *tag, obj_t *obj)
+static inline
+obj_t *obj_check_tag(shape_t *tag, obj_t *obj)
 {
     assert (obj);
     if (UNLIKELY(obj->tag != tag))
