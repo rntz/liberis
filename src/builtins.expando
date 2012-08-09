@@ -33,6 +33,7 @@
 #error "builtins.expando included with BUILTIN undefined"
 #endif
 
+
 /* Sequences */
 /* (SEQ-MAKE x0 x1 ... xn) == `(,x0 ,x1 ... ,xn) */
 BUILTIN(SEQ_MAKE, 0, true,
@@ -47,8 +48,8 @@ BUILTIN(SEQ_MAKE, 0, true,
 /* (SEQ-NTH n s) ==> `n`th element of `s` */
 BUILTIN(SEQ_NTH, 2, false, UNIMPLEMENTED)
 
-/* (SEQ-LENGTH s) ==> length of `s` */
-BUILTIN(SEQ_LENGTH, 1, false, UNIMPLEMENTED)
+/* (SEQ-LEN s) ==> length of `s` */
+BUILTIN(SEQ_LEN, 1, false, UNIMPLEMENTED)
 
 BUILTIN(SEQ_CAT, 0, true, UNIMPLEMENTED)
 
@@ -57,7 +58,6 @@ BUILTIN(STR_CAT, 0, true, UNIMPLEMENTED) /* variadic */
 BUILTIN(STR_EQ, 2, false, UNIMPLEMENTED)
 BUILTIN(STR_CMP, 2, false, UNIMPLEMENTED)
 BUILTIN(STR_SUBSTR, 3, false, UNIMPLEMENTED)
-BUILTIN(INTERN, 1, false, UNIMPLEMENTED)
 
 /* Equality, comparison, other tests */
 /* Should equality tests be variadic? */
@@ -68,9 +68,6 @@ BUILTIN(SYM_EQ, 2, false, UNIMPLEMENTED)
 BUILTIN(IS_NIL, 1, false,
         DEST = eris_make_bool(THREAD->vm, ARG(0) == eris_nil);
     )
-
-/* Miscellany. */
-BUILTIN(APPLY, 2, true, UNIMPLEMENTED)   /* variadic */
 
 
 /* Arithmetic */
@@ -118,3 +115,14 @@ BUILTIN(BIT_NOT, 1, false, UNIMPLEMENTED)
  */
 BUILTIN(BIT_SHR, 2, false, UNIMPLEMENTED)
 BUILTIN(BIT_SHL, 2, false, UNIMPLEMENTED)
+
+
+/* Miscellany. */
+BUILTIN(APPLY, 2, true, UNIMPLEMENTED)   /* variadic */
+
+BUILTIN(INTERN, 1, false, UNIMPLEMENTED)
+
+/* uniq is 1adic (uniq s) --> gensym with convenience-name s (must be string)
+ *      or 0adic   (uniq) --> gensym with no convenience-name
+ */
+BUILTIN(UNIQ, 0, true, UNIMPLEMENTED)
