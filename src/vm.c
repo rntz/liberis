@@ -45,6 +45,16 @@ void eris_vm_run(vm_state_t *state)
         assert (0 && "unimplemented");
     }
 
+#define NEW(shape, ...) do {                                    \
+        if (!new_##shape(__VA_ARGS__, S.thread, S.frame)) {     \
+            goto raise;                                         \
+        }                                                       \
+    } while (0)
+
+#define NEW_SEQ(...) NEW(seq, __VA_ARGS__)
+#define NEW_NUM(...) NEW(num, __VA_ARGS__)
+#define NEW_CLOSURE(...) NEW(closure, __VA_ARGS__)
+
     /* The ((void) 0)s that you see in the following code are garbage to appease
      * the C99 spec, which allows only that a _statement_, not a _declaration_,
      * follow a label or case. */
@@ -73,8 +83,7 @@ void eris_vm_run(vm_state_t *state)
           /* Allocating; update control frame IP. */
           FRAME(S.frame).ip = S.ip;
           num_t *num;
-          if (!new_num(&num, S.thread, S.frame))
-              goto raise;       /* TODO */
+          NEW_NUM(&num);
           num->tag = NUM_INTPTR;
           /* FIXME: this will never produce a negative number! */
           num->data.v_intptr = LONGARG2;
@@ -304,8 +313,7 @@ void eris_vm_run(vm_state_t *state)
           upval_t nupvals_regs = ARG3;   /* # upvals from registers */
           upval_t nupvals = nupvals_upvals + nupvals_regs;
           closure_t *func;
-          if (!new_closure(&func, nupvals, S.thread, S.frame))
-              goto raise;       /* TODO */
+          NEW_CLOSURE(&func, nupvals);
           REG(ARG1) = CONTENTS_VAL(func);
 
           /* TODO: carefully consider manually optimizing this. */
