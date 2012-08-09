@@ -14,16 +14,12 @@
  * - __VA_ARGS__: code that evaluates the builtin. expects the following macros
  *   to be defined:
  *
- *   - NARGS: number of arguments
- *   - ARG(i): ith argument
- *   - DEST: location to put the result value in.
- *   - ARITY_ERROR(): signals an arity error.
- *   - TYPE_ERROR(): signals a type error.
- *   - THREAD: pointer to the current eris_thread_t
- *   - UNIMPLEMENTED: signals the builtin is unimplemented.
- *
- *   TODO: TYPE_ERROR (and maybe ARITY_ERROR?) should take args to indicate what
- *   failed.
+ *           size_t NARGS           number of arguments
+ *            val_t ARG(size_t i)   ith argument
+ *            val_t DEST            (LVALUE) location to put the result value in
+ *   eris_thread_t *T               the current thread
+ *            void *F               the current (bottom-most) frame
+ *                  UNIMPLEMENTED   signals the builtin is unimplemented
  *
  *   Headers that must be included for code to work:
  *   - vm_util.h
@@ -33,10 +29,11 @@
 #error "builtins.expando included with BUILTIN undefined"
 #endif
 
+
 /* Sequences */
 /* (SEQ-MAKE x0 x1 ... xn) == `(,x0 ,x1 ... ,xn) */
 BUILTIN(SEQ_MAKE, 0, true,
-        seq_t *seq_ = MAKE_SEQ(NARGS);
+        seq_t *seq_ = MAKE_SEQ(T,F, NARGS);
         seq_->len = NARGS;
         for (size_t i = 0; i < NARGS; ++i) {
             seq_->data[i] = ARG(i);
@@ -44,36 +41,36 @@ BUILTIN(SEQ_MAKE, 0, true,
         DEST = CONTENTS_VAL(seq_);
     )
 
-/* (SEQ-TABULATE n f) == (SEQ-MAKE (f 0) (f 1) ... (f (- n 1))) */
-BUILTIN(SEQ_TABULATE, 2, false, UNIMPLEMENTED)
-
 /* (SEQ-NTH n s) ==> `n`th element of `s` */
 BUILTIN(SEQ_NTH, 2, false, UNIMPLEMENTED)
 
-/* (SEQ-LENGTH s) ==> length of `s` */
-BUILTIN(SEQ_LENGTH, 1, false, UNIMPLEMENTED)
+/* (SEQ-LEN s) ==> length of `s` */
+BUILTIN(SEQ_LEN, 1, false, UNIMPLEMENTED)
 
 BUILTIN(SEQ_CAT, 0, true, UNIMPLEMENTED)
 
+
 /* Strings */
 BUILTIN(STR_CAT, 0, true, UNIMPLEMENTED) /* variadic */
-BUILTIN(STR_EQ, 2, false, UNIMPLEMENTED)
 BUILTIN(STR_CMP, 2, false, UNIMPLEMENTED)
 BUILTIN(STR_SUBSTR, 3, false, UNIMPLEMENTED)
-BUILTIN(INTERN, 1, false, UNIMPLEMENTED)
+BUILTIN(STR_LEN, 1, false, UNIMPLEMENTED)
 
+
 /* Equality, comparison, other tests */
 /* Should equality tests be variadic? */
 /* fastest & crudest equality test */
 BUILTIN(RAW_EQ, 2, false, UNIMPLEMENTED)
 BUILTIN(NUM_EQ, 2, false, UNIMPLEMENTED)
 BUILTIN(SYM_EQ, 2, false, UNIMPLEMENTED)
+BUILTIN(STR_EQ, 2, false, UNIMPLEMENTED)
+
 BUILTIN(IS_NIL, 1, false,
-        DEST = eris_make_bool(THREAD->vm, ARG(0) == eris_nil);
+        DEST = eris_make_bool(T->vm, ARG(0) == eris_nil);
     )
 
-/* Miscellany. */
-BUILTIN(APPLY, 2, true, UNIMPLEMENTED)   /* variadic */
+BUILTIN(BOOL, 1, false, UNIMPLEMENTED)
+BUILTIN(NOT, 1, false, UNIMPLEMENTED)
 
 
 /* Arithmetic */
@@ -121,3 +118,10 @@ BUILTIN(BIT_NOT, 1, false, UNIMPLEMENTED)
  */
 BUILTIN(BIT_SHR, 2, false, UNIMPLEMENTED)
 BUILTIN(BIT_SHL, 2, false, UNIMPLEMENTED)
+
+
+/* Miscellany. */
+BUILTIN(APPLY, 2, true, UNIMPLEMENTED)   /* variadic */
+
+BUILTIN(INTERN, 1, false, UNIMPLEMENTED)
+BUILTIN(UNIQ, 0, false, UNIMPLEMENTED)

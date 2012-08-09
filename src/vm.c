@@ -8,6 +8,8 @@
 #include "vm.h"
 #include "vm_util.h"
 
+#define FRAME(f) (f)->data.eris_call
+
 /* Helper functions for call instructions. */
 /* Does arity checking and conses excess variadic arguments. */
 static inline
@@ -17,10 +19,11 @@ void do_precall(vm_state_t *S, closure_t *func, reg_t offset, nargs_t nargs)
         return;
 
     if (LIKELY(func->proto->variadic)) {
-        eris_die("variadic function calls unimplemented"); /* TODO */
+        eris_bug("variadic function calls unimplemented"); /* TODO */
     }
     else {
-        eris_arity_error("arity mismatch");
+        /* FIXME: need to update frame's IP */
+        eris_arity_error(S->thread, S->frame, "arity mismatch");
     }
     (void) S; (void) offset;    /* unused */
 }
@@ -35,7 +38,7 @@ void do_builtin(vm_state_t *S, obj_t *obj, reg_t offset, nargs_t nargs)
         (UNLIKELY(!builtin->variadic) || UNLIKELY(nargs < builtin->num_args)))
     {
         /* TODO: better error message */
-        eris_arity_error("builtin");
+        eris_arity_error(S->thread, S->frame, "builtin");
     }
 
     switch (builtin->op) {
@@ -45,16 +48,15 @@ void do_builtin(vm_state_t *S, obj_t *obj, reg_t offset, nargs_t nargs)
 #define ARG(i) S->regs[offset+(i)]
 #define DEST S->regs[offset]
             /* TODO: better error messages */
-#define ARITY_ERROR() eris_arity_error("builtin")
-#define TYPE_ERROR() eris_type_error("builtin")
-#define THREAD S->thread
-#define UNIMPLEMENTED eris_die("builtin %u unimplemented", builtin->op);
+#define T S->thread
+#define F S->frame
+#define UNIMPLEMENTED eris_bug("builtin %u unimplemented", builtin->op);
 
 #include "builtins.expando"
 
 #undef UNIMPLEMENTED
-#undef TYPE_ERROR
-#undef ARITY_ERROR
+#undef F
+#undef T
 #undef DEST
 #undef ARG
 #undef NARGS
@@ -87,7 +89,7 @@ bool do_call(vm_state_t *S,
 
         if (!tail_call) {
             /* Update our IP on control stack, so callee returns correctly. */
-            S->frame->ip = S->ip;
+            FRAME(S->frame).ip = S->ip;
 
             /* Push callee's stack frame. Remember, control stack grows down. */
             --S->frame;
@@ -110,7 +112,7 @@ bool do_call(vm_state_t *S,
         }
 
         /* Update frame. */
-        S->frame->func = func;
+        FRAME(S->frame).func = func;
 
         /* Jump into the function. */
         S->func = func;
@@ -132,7 +134,8 @@ bool do_call(vm_state_t *S,
     }
     /* Calling everything else */
     else {
-        eris_type_error("invalid function object");
+        /* FIXME: need to update frame's IP */
+        eris_type_error(S->thread, S->frame, "invalid function object");
     }
 
     UNREACHABLE;
@@ -186,6 +189,9 @@ void eris_vm_run(vm_state_t *state)
 #define LONGARG2 VM_LONGARG2(instr)
 #define DEST REG(ARG1)
 
+#define T   S.thread
+#define F   S.frame
+
 #define UPVAL(upval) (S.func->upvals[(upval)])
 #define CELL(upval) (deref_cell(get_cell(UPVAL(upval))))
 
@@ -198,8 +204,8 @@ void eris_vm_run(vm_state_t *state)
 
       case OP_LOAD_INT: {
           /* Allocating; update control frame IP. */
-          S.frame->ip = S.ip;
-          obj_t *obj = NEW(num);
+          FRAME(S.frame).ip = S.ip;
+          obj_t *obj = NEW(T,F, num);
           num_t *num = OBJ_CONTENTS(num, obj);
           num->tag = NUM_INTPTR;
           num->data.v_intptr = LONGARG2;
@@ -316,9 +322,9 @@ void eris_vm_run(vm_state_t *state)
           /* We determine how far to pop the stack by looking at the argument
            * offset given in the CALL instruction that set up our frame.
            */
-          S.regs -= VM_ARG2(*S.frame->ip);
-          S.ip = S.frame->ip + 1; /* +1 to skip past the call instr. */
-          S.func = S.frame->func;
+          S.regs -= VM_ARG2(*FRAME(S.frame).ip);
+          S.ip = FRAME(S.frame).ip + 1; /* +1 to skip past the call instr. */
+          S.func = FRAME(S.frame).func;
       }
         break;
 
@@ -336,7 +342,7 @@ void eris_vm_run(vm_state_t *state)
           upval_t nupvals_upvals = ARG2; /* # upvals from parent upvals */
           upval_t nupvals_regs = ARG3;   /* # upvals from registers */
           upval_t nupvals = nupvals_upvals + nupvals_regs;
-          obj_t *funcobj = NEW_WITH(closure, upvals, nupvals);
+          obj_t *funcobj = NEW_WITH(T,F, closure, upvals, nupvals);
           DEST = OBJ_VAL(funcobj);
           closure_t *func = OBJ_CONTENTS(closure, funcobj);
 
