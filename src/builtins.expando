@@ -22,6 +22,7 @@
 /* Sequences */
 /* (SEQ-MAKE x0 x1 ... xn) == `(,x0 ,x1 ... ,xn) */
 BUILTIN(SEQ_MAKE, 0, true,
+        /* FIXME: allocating, need to update frame ip */
         seq_t *seq_;
         NEW_SEQ(&seq_, nargs);
         for (size_t i = 0; i < nargs; ++i) {

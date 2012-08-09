@@ -81,8 +81,9 @@ void eris_vm_run(vm_state_t *state)
         break;
 
       case OP_LOAD_INT: {
-          /* Allocating; update control frame IP. */
+          /* Allocating; need to update frame IP in case of GC scan. */
           FRAME(S.frame).ip = S.ip;
+
           num_t *num;
           NEW_NUM(&num);
           num->tag = NUM_INTPTR;
@@ -309,6 +310,9 @@ void eris_vm_run(vm_state_t *state)
         /* NB. logical CLOSE instr spans multiple (>= 2) instr_ts.
          * TODO: document format of CLOSE instr. */
       case OP_CLOSE: {
+          /* Allocating; need to update frame IP in case of GC scan. */
+          FRAME(S.frame).ip = S.ip;
+
           upval_t nupvals_upvals = ARG2; /* # upvals from parent upvals */
           upval_t nupvals_regs = ARG3;   /* # upvals from registers */
           upval_t nupvals = nupvals_upvals + nupvals_regs;
