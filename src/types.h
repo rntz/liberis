@@ -91,11 +91,12 @@ SHAPE(closure) {
 SHAPE(c_closure) {
     eris_c_func_t func;
     void *data;
+    val_t name;                 /* invariant: is a string */
     size_t num_upvals;
     val_t upvals[];
 };
 
-/* TODO: decide re unicode & encoding stuff. */
+/* TODO: figure out unicode/encoding issues. */
 SHAPE(string) {
     size_t len;
     const char data[];

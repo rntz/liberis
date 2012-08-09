@@ -112,8 +112,11 @@ eris_idx_t eris_c_tailcall(eris_frame_t *S, eris_idx_t func_ids, size_t nargs);
  * constructing them?
  */
 
-/* Pushes a function with an empty closure (no upvals). */
-void eris_push_func(eris_frame_t *S, eris_c_func_t func, void *data);
+/* Pushes a function with an empty closure (no upvals). `name` is the name to
+ * label the function with (in eg. backtraces); it may be NULL.
+ */
+void eris_push_func(eris_frame_t *S, const char *name,
+                    eris_c_func_t func, void *data);
 
 /* Pushes a function with a closure whose first `n_upval_idxs' upvals are taken
  * from the upvals of the current frame indicated by `upval_idxs', and whose
@@ -122,7 +125,8 @@ void eris_push_func(eris_frame_t *S, eris_c_func_t func, void *data);
  *
  * Iff n_upval_idxs is 0, upval_idxs may be NULL. Likewise for {n_,}stack_idxs.
  */
-void eris_push_closure(eris_frame_t *S, eris_c_func_t func,
+void eris_push_closure(eris_frame_t *S, const char *name,
+                       eris_c_func_t func,
                        size_t n_upval_idxs, eris_idx_t *upval_idxs,
                        size_t n_stack_idxs, eris_idx_t *stack_idxs,
                        void *data);
