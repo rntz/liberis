@@ -100,6 +100,11 @@ void eris_push_upval(eris_frame_t *S, eris_idx_t upval_idx);
  */
 typedef eris_idx_t (*eris_c_func_t)(eris_frame_t*, void*);
 
+/* To perform a proper tail-call, call this function as the last thing you do in
+ * a C callback (and return the value it returns).
+ */
+eris_idx_t eris_c_tailcall(eris_frame_t *S, eris_idx_t func_ids, size_t nargs);
+
 /* TODO:
  *
  * How do variadic C callbacks work? How do C callbacks check they have received
