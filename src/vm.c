@@ -165,7 +165,7 @@ void eris_vm_run(vm_state_t *state)
                         eris_bug("variadic function calls unimplemented");
                     }
                     else {
-                        eris_arity_error("arity mismatch");
+                        goto raise; /* TODO: arity error */
                     }
                 }
 
@@ -209,8 +209,7 @@ void eris_vm_run(vm_state_t *state)
                     && (UNLIKELY(!builtin->variadic)
                         || UNLIKELY(nargs < builtin->num_args)))
                 {
-                    /* TODO: better error message */
-                    eris_arity_error("builtin");
+                    goto raise; /* TODO: arity error */
                 }
 
                 switch (builtin->op) {
@@ -218,7 +217,6 @@ void eris_vm_run(vm_state_t *state)
                     case CAT(BOP_,name): { __VA_ARGS__ } break;
 #define ARG(i)  S.regs[offset+(i)]
 #define DEST    S.regs[offset]
-                                /* TODO: better error messages */
 #define UNIMPLEMENTED eris_bug("builtin %u unimplemented", builtin->op);
 
 #include "builtins.expando"
@@ -245,7 +243,7 @@ void eris_vm_run(vm_state_t *state)
             }
             /* Calling everything else */
             else {
-                eris_type_error("invalid function object");
+                goto raise; /* TODO: type error */
             }
 
             break;

@@ -43,15 +43,3 @@ void eris_bug(const char *fmt, ...)
     eris_vbug(fmt, ap);
     va_end(ap);                 /* unreachable */
 }
-
-void eris_type_error(char *x, ...)
-{
-    eris_bug("type error");
-    (void) x;
-}
-
-void eris_arity_error(char *x, ...)
-{
-    eris_bug("arity error");
-    (void) x;
-}

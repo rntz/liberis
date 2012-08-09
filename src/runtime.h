@@ -48,9 +48,5 @@ NORETURN void eris_bug(const char *format, ...);
 #define IMPOSSIBLE(msg, ...) (eris_bug(msg, __VA_ARGS__))
 #endif
 
-/* TODO: These probably need adjusting. */
-NORETURN void eris_type_error(char *x, ...);
-NORETURN void eris_arity_error(char *x, ...);
-
 
 #endif
