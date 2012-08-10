@@ -183,7 +183,7 @@ typedef struct {
         struct {
             instr_t *ip;
             closure_t *func;
-        } eris_call;            /* TODO: rename "call" */
+        } call;
         struct {
             c_closure_t *func;
             size_t num_regs;

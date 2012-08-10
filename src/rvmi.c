@@ -105,7 +105,7 @@ int main(int argc, char **argv)
     /* NUM_CONTS-2 to leave a poisoned frame at the top */
     frame_t *frame = &cont[NUM_CONTS-2];
     frame->tag = FRAME_CALL;
-    frame->data.eris_call.func = bar;
+    frame->data.call.func = bar;
 
     vm_state_t state = ((vm_state_t) {
             .ip = bar_code,

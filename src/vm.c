@@ -8,7 +8,7 @@
 #include "types.h"
 #include "vm.h"
 
-#define FRAME(f) (f)->data.eris_call
+#define FRAME(f) (f)->data.call
 
 /* Helper functions. */
 static inline
