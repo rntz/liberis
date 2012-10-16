@@ -1,5 +1,33 @@
 * NOW
 
+# Figure out how calling into eris from C will work
+
+Problem: implementation of all instructions is locked inside eris_run_vm.
+
+Solution: eris_vm_run's interface, instead of "run this state", is "please call
+this procedure with these args".
+
+# Related: figure out how calling eris funcs from builtins (eg. seq-tabulate) will work
+
+Simplest solution is to require such things to actually be C functions. This
+kinda sucks - overhead for calling into C and back into eris involves a setjmp
+and bunch of other stuff.
+
+# Figure out how setjmp logic for C calls will work
+
+I can either have a setjmp() on each call into eris from C, or on each call out
+to C from eris.
+
+Which is more common:
+
+- calls to eris from C? then want setjmp on calls into C
+  perhaps not done in a tight loop?
+  although it would be by eg. seq-tabulate!
+
+- calls to C from eris?
+  common if using eris as control language with C-implemented primitives
+  could occur in a tight loop
+
 # Figure out how stack unwinding for exceptions will work
 
 Currently I am passing T,F pairs to all funcs that could raise exceptions. This

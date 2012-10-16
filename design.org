@@ -16,6 +16,83 @@ Rips off Lua pretty heavily. Register machine, each function indicates how many
 registers it needs, registers implicitly on a stack, calling function shifts
 register window
 
+* Built-in data structures
+
+Obviously want symbols, strings, and a numeric stack.
+Real question is what varieties of compound datastructure we want.
+
+Several dimensions of decision-making:
+
+** Strings and buffers
+
+We probably want to use ropes for strings eventually. Is that good enough for
+representing buffers of text? Assume it is until proven otherwise, then
+implement buffers.
+
+** Sequence/mapping types
+
+We want support for both. (You can build one from the other but it sucks).
+Questions:
+
+- Do we want to combine them? Even ignoring implementation difficulty, from a
+  programmer's perspective this seems undesirable.
+
+- Are strings just sequences of characters? This is either terribly inefficient
+  or requires difficult dynamic representation optimization. Probably not.
+
+** Mutable/immutable types
+
+We need mutability somehow. Options:
+- All structures are mutable (except strings)
+  DECISION: Not doing this. See "Mutability and dictionaries", below.
+
+- Structures are immutable except for ref cells
+  DECISION: Not doing this. It sucks for programmers.
+
+- Mutable and immutable versions of some/all structures
+
+
+  |----------+-------------+-----------------|
+  |          | IMMUTABLE   | MUTABLE         |
+  |----------+-------------+-----------------|
+  | SEQUENCE | seq         | array           |
+  |          | list        | deque           |
+  |          | vec         |                 |
+  |----------+-------------+-----------------|
+  | MAPPING  | dict        | dict            |
+  |          | mapping     | table           |
+  |          | object, obj | hash, hashtable |
+  |          | record, rec | object, obj     |
+  |          | struct      |                 |
+  |          |             |                 |
+  |          | obj         | dict            |
+  |----------+-------------+-----------------|
+
+*** Mutability and dictionaries
+
+TLDR: Disallow mutable keys. Allowing mutable keys is too difficult to implement
+correctly.
+
+Options:
+- Disallow mutable keys:
+
+  Requires immutable structures.
+
+  Should inserting with a mutable key automatically make an immutable copy? If
+  so, what about circular keys?
+
+  ANSWER: Should probably error on circular keys. Can delay decision about
+  auto-freezing until later.
+
+- Allow mutable keys:
+
+  Mutating a key makes lookup behavior unpredictable. Iteration should still
+  work fine.
+
+  Need to deal with circularity when hashing. I see no way to do this without
+  making hashing "entry-point dependent", ie. the hash of a ref might be
+  different from combining the hashes of its contents.
+
 * Tags
 ** Conclusion in brief
 There are a lot of decisions to be made about representation of values and their
