@@ -44,7 +44,7 @@ eris_vm_t *eris_thread_vm(eris_thread_t *thread);
  * control flow, it then calls `finally_func(state, data)'. If the call to
  * `finally_func' causes exceptional control flow, it is propagated upward.
  * Otherwise, if the call to `try_func' caused exceptional control flow, that is
- * propagated outward. Otherwise, the call to eris_protect returns normally.
+ * propagated upward. Otherwise, the call to eris_protect returns normally.
  */
 void eris_protect(
     eris_frame_t *S,
