@@ -25,9 +25,6 @@
  *   Avoid direct use of this macro; prefer LIKELY() and UNLIKELY(), defined
  *   further down in this file.
  *
- * - HAVE_PRAGMA_GCC_DIAGNOSTIC: defined only if we believe that our compiler
- *   supports the "#pragma GCC diagnostic" directive. (warnings)
- *
  * Define IGNORE_COMPILER_FEATURES to force all of these to use their default,
  * standards-compliant, non-compiler-specific definitions.
  */
