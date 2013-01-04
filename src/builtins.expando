@@ -20,7 +20,12 @@
 
 
 /* Sequences */
-/* (SEQ-MAKE x0 x1 ... xn) == `(,x0 ,x1 ... ,xn) */
+/* (SEQ-NTH n s) ==> `n`th element of `s` */
+BUILTIN(SEQ_NTH, 2, false, UNIMPLEMENTED)
+/* (SEQ-LEN s) ==> length of `s` */
+BUILTIN(SEQ_LEN, 1, false, UNIMPLEMENTED)
+
+/* (SEQ-MAKE x_0 x_1 ... x_n) == `(,x_0 ,x_1 ... ,x_n) */
 BUILTIN(SEQ_MAKE, 0, true,
         /* FIXME: allocating, need to update frame ip */
         seq_t *seq_;
@@ -31,19 +36,19 @@ BUILTIN(SEQ_MAKE, 0, true,
         DEST = CONTENTS_VAL(seq_);
     )
 
-/* (SEQ-NTH n s) ==> `n`th element of `s` */
-BUILTIN(SEQ_NTH, 2, false, UNIMPLEMENTED)
-
-/* (SEQ-LEN s) ==> length of `s` */
-BUILTIN(SEQ_LEN, 1, false, UNIMPLEMENTED)
-
+/* (SEQ-FROM-FN n f) ==> `(,(f 0) ,(f 1) ... ,(f n-1)) */
+BUILTIN(SEQ_FROM_FN, 2, false, UNIMPLEMENTED)
 BUILTIN(SEQ_CAT, 0, true, UNIMPLEMENTED)
+BUILTIN(SEQ_SLICE, 3, false, UNIMPLEMENTED)
 
 /* Strings */
+/* (STR-NTH n s) ==> code point of `n`th char in `s` */
+BUILTIN(STR_NTH, 2, false, UNIMPLEMENTED)
+BUILTIN(STR_LEN, 1, false, UNIMPLEMENTED)
 BUILTIN(STR_CAT, 0, true, UNIMPLEMENTED) /* variadic */
 BUILTIN(STR_EQ, 2, false, UNIMPLEMENTED)
 BUILTIN(STR_CMP, 2, false, UNIMPLEMENTED)
-BUILTIN(STR_SUBSTR, 3, false, UNIMPLEMENTED)
+BUILTIN(STR_SLICE, 3, false, UNIMPLEMENTED)
 
 /* Equality, comparison, other tests */
 /* Should equality tests be variadic? */
