@@ -55,15 +55,16 @@ We need mutability somehow. Options:
   |----------+-------------+-----------------|
   |          | IMMUTABLE   | MUTABLE         |
   |----------+-------------+-----------------|
-  | SEQUENCE | seq         | array           |
+  | SEQUENCE | seq         | vec             |
   |          | list        | deque           |
-  |          | vec         |                 |
+  |          | vec         | array           |
   |----------+-------------+-----------------|
   | MAPPING  | dict        | dict            |
   |          | mapping     | table           |
   |          | object, obj | hash, hashtable |
   |          | record, rec | object, obj     |
   |          | struct      |                 |
+  |          | assoc       |                 |
   |          |             |                 |
   |          | obj         | dict            |
   |----------+-------------+-----------------|
@@ -127,8 +128,6 @@ Benefits of this scheme:
    two instructions.
 
    Exceptions to "we're about to be accessing its memory anyway":
-   - nil check. but this is just a comparison anyway, since nil is static!
-
    - symbol equality, which is most common/need-to-be-fast op on symbols. but
      this is fast anyway as long as I only care about results on symbols, since
      equal symbols are identical objects!
@@ -136,6 +135,8 @@ Benefits of this scheme:
    - values that can be stored entirely in a word (incl. tag):
      - fixnums (small ints)
      - builtins
+
+   - nil check. but this is just a comparison anyway, since nil is static!
 
 2. (DISCREDITED) Lower memory overhead (eg. conses go from 3-word to 2-word)?
 
@@ -218,6 +219,96 @@ compiler knows how to handle. Code involving "cons" doesn't get compiled
 specially - it's still a call through a cell, so "cons" can be
 overridden/redefined. But when we actually run the call instruction, it simply
 notes that the "function" value is a builtin, and switches on it.
+
+** Builtin API design
+
+How do we do iteration? How do we allow efficient construction of builtin
+datatypes from other types? Do we want variadic catenation operators? Sequence
+catenation operators (ie give it a seq of strs and it gives you a concatenated
+str)?
+
+In general, how much weight do we give to efficiency?
+
+Answer: For now at least, very little.
+
+** List of builtins
+
+API inspiration list:
+- Clojure
+- Haskell
+- Java
+- Lua
+
+# Miscellaneous
+apply
+intern -- string to symbol. call it string->symbol?
+uniq -- makes fresh gensym
+
+# Equality & comparison tests
+is-nil
+raw-eq
+num-eq
+sym-eq
+
+# String operations
+str-eq
+str-cmp
+str-len
+str-cat
+str-nth -- returns an int representing codepoint of nth character
+? str-from-fn
+
+# Seq (immutable sequence) operations
+seq-make x_0 x_1 ... x_n ==> `(,x_0 ,x_1 .. ,x_n)
+seq-from-fn n f ==> `(,(f 0) ,(f 1) .. ,(f n-1))
+seq-nth n s
+seq-len
+seq-slice
+seq-cat
+
+# Vec (mutable sequence) operations
+vec-make
+vec-from-fn
+vec-nth
+vec-len
+? vec-slice
+vec-insert
+vec-remove
+vec-put
+
+-- how do we insert a sequence of values into a vec?
+-- eg. extend it by another vec or seq.
+
+# Obj (immutable mapping) operations
+? obj-empty -- not a builtin function, a builtin value
+? obj-make
+? obj-from-{fn,seq,dict}
+obj-size
+obj-keys -- how does it return keys? as seq? iterator?
+obj-get
+obj-put
+obj-remove
+? obj-merge
+
+-- what's the best minimal interface for obj mass operations?
+-- see Data.Map in haskell for examples
+
+# Dict (mutable mapping) operations
+? dict-new
+? dict-make
+? dict-from-{fn,seq,obj}
+dict-size
+dict-keys
+dict-get
+dict-put
+dict-remove
+? dict-merge
+
+# Numbers
+add sub mul div mod min max abs sqrt exp log exact->inexact inexact->exact floor
+ceiling truncate round
+
+bit-and bit-or bit-xor bit-not bit-shr bit-shl
 
 * Upvals & closures
 
