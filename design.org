@@ -233,13 +233,10 @@ Answer: For now at least, very little.
 
 ** List of builtins
 
-API inspiration list:
-- Clojure
-- Haskell
-- Java
-- Lua
+API inspiration list: Clojure, Haskell, Java, Lua
 
 # Miscellaneous
+type-of
 apply
 intern -- string to symbol. call it string->symbol?
 uniq -- makes fresh gensym
@@ -257,6 +254,13 @@ str-len
 str-cat
 str-nth -- returns an int representing codepoint of nth character
 ? str-from-fn
+
+# Cell operations
+cell-make -- takes optional initial value? or just creates empty cell?
+cell-empty?
+cell-get -- errors if empty
+cell-put
+cell-clear
 
 # Seq (immutable sequence) operations
 seq-make x_0 x_1 ... x_n ==> `(,x_0 ,x_1 .. ,x_n)
