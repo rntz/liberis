@@ -40,9 +40,9 @@ typedef   uint8_t   nargs_t;
 typedef   uint8_t   upval_t;
 
 /* Opcode values. Note that this is not the type used to represent opcodes in
- * actual bytecode (that's op_t from types.h). It just defines some nice
- * integral constants for us, and lets us cast to this type when we want to be
- * sure we've handled all the branches in a switch.
+ * actual bytecode (that's op_t, above). It just defines some nice integral
+ * constants for us, and lets us cast to this type when we want to be sure we've
+ * handled all the branches in a switch.
  */
 enum op {
     OP_MOVE, OP_LOAD_INT, OP_LOAD_UPVAL, OP_LOAD_CELL,

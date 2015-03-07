@@ -9,6 +9,8 @@
 /* The magic constants used here are obvious, but will change if instruction
  * encoding scheme changes. */
 /* VM_ARG0 is used by instructions spanning multiple instr_ts. */
+/* FIXME: what the hell does casting an integer to a shorter width do?
+ * is this defined by C spec? */
 #define VM_OP(instr)          ((op_t)(instr))
 #define VM_ARG0(instr)        ((arg_t)(instr))
 #define VM_ARG1(instr)        ((arg_t)((instr) >> 8))
@@ -40,6 +42,8 @@
  */
 #define SHAPE_TYPE(shape) shape##_t
 #define SHAPE_TAG(shape) (&eris_shape_##shape)
+
+/* TODO: rename these so it's clearer what they do. */
 
 static inline
 val_t OBJ_VAL(obj_t *o) { return (val_t) o; }
