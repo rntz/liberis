@@ -1,0 +1,103 @@
+This file documents our instruction format and instruction set.
+
+Jargon:
+    LSB: least-significant byte(s)
+    MSB: most-significant byte(s)
+
+* FIXME: think more about instruction encoding and endianness
+
+* Instruction format
+Most instructions are 32 bits (4 bytes). A few are longer. All instructions are
+multiples of 4 bytes in length, and are divided up into 4-byte "chunks".
+
+The format of the first chunk is generally as follows (given LSB-first):
+
+| --- 1 byte --- | --- 1 byte --- | --- 1 byte --- | --- 1 byte --- |
+|     opcode     |   argument #1  |   argument #2  |   argument #3  |
+|                |                |               OR                |
+|                |                |         long argument #2        |
+|                |                | ----------- 2 bytes ----------- |
+
+The LSB of the first chunk always gives the opcode.
+
+Arguments may be interpreted as:
+- registers
+- signed integers
+- unsigned integers
+- an upval reference
+
+We write register arguments as "rN", where N is the argument #.
+We write signed integer arguments as "sN", where N is the argument #.
+We write unsigned integer arguments as "uN", where N is the argument #.
+We write upval reference arguments as "eN", where N is the argument #.
+
+Argument numbers are "1", "2", or "3"; or "23" for a long (16-byte) second
+argument, encoded using the 2 MSBs.
+
+* Instruction set
+** MOVE r1, r2
+REG[r1] = REG[r2]
+
+** LOAD_INT r1, s23
+REG[r1] = s23
+
+** LOAD_UPVAL r1, e2
+REG[r1] = UPVAL[e2]
+
+** LOAD_CELL r1, e2
+REG[r1] = load_cell(UPVAL[e2])
+
+NB. This can raise an exception, if the cell at UPVAL[e2] is empty!
+
+** CALL_CELL e1, r2, u3
+e1: upval containing cell pointing to function to call
+r2: first argument register
+u3: number of argument registers.
+
+** CALL_REG r1, r2, u3
+r1: register containing function to call
+r2: first argument register
+u3: number of argument registers.
+
+** TAILCALL_CELL e1, r2, u3
+like CALL_CELL but performs a tail-call
+
+** TAILCALL_REG r1, r2, u3
+like CALL_REG but performs a tail-call
+
+** JUMP s23
+NB. argument 1 is ignored.
+performs a relative jump to (IP + s23)
+jump offset is relative to instruction pointer of the jump instruction itself.
+the IP is indexed by 4-byte chunks, not by instructions!
+
+** RETURN r1
+Returns the value REG[r1].
+
+** IF r1
+Branches on the value in REG[r1].
+The instruction immediately after an IF *must* be a JUMP.
+The JUMP is taken iff REG[r1] is nil (that is, false).
+Otherwise, it is skipped.
+
+The JUMP's offset is interpreted relative to the JUMP's position in the
+instruction stream, not relative to the IF's position. For example:
+
+     0  IF 0            # branches on contents of REG[0]
+     1  JUMP 3          # taken if REG[0] held nil, otherwise skipped
+     2  RETURN 1        # executed if REG[0] held a *true* (non-nil) value
+     3  RETURN 2        # dead code, here for demonstration purposes only
+     4  RETURN 3        # executed if REG[0] held nil
+
+** IFNOT r1
+Like IF, but negates its argument. Thus, the following JUMP is taken iff REG[r1]
+is *true* (i.e. non-nil); and otherwise is skipped.
+
+** CLOSE r1, u2, u3, <special>
+r1: register into which to store closure
+u2: number of upvals to copy from upvals
+u3: number of upvals to copy from registers
+
+CLOSE is the reason why not all instructions take a single chunk.
+
+FIXME: document this instruction's special formatting.
