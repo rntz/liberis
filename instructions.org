@@ -59,6 +59,8 @@ r1: register containing function to call
 r2: first argument register
 u3: number of argument registers.
 
+TODO: CALL_UPVAR?
+
 ** TAILCALL_CELL e1, r2, u3
 like CALL_CELL but performs a tail-call
 
@@ -71,8 +73,12 @@ performs a relative jump to (IP + s23)
 jump offset is relative to instruction pointer of the jump instruction itself.
 the IP is indexed by 4-byte chunks, not by instructions!
 
+TODO: why doesn't this use the other 3 bytes as argument?
+
 ** RETURN r1
 Returns the value REG[r1].
+
+TODO: why not RETURN_UPVAL? RETURN_INT?
 
 ** IF r1
 Branches on the value in REG[r1].
@@ -101,3 +107,19 @@ u3: number of upvals to copy from registers
 CLOSE is the reason why not all instructions take a single chunk.
 
 FIXME: document this instruction's special formatting.
+
+TODO: maybe use out-of-line storage for CLOSE arguments?
+* Instructions we might add
+Concerns: How is the meaning of `(foo ,bar) determined? If I redefine
+quasiquote, does it change meaning? How about '(foo bar)? Is that created ahead
+of time and stuck in upvars?
+
+** MAKE_CELL
+** LOAD_NIL
+** INTERN
+Are there times where the language impl itself (not the user, making a call to
+the `intern' builtin) might need to intern a string? Not clear yet.
+
+** IS_NIL
+Are there times when the language implementation itself might need to test
+something for nil-ness (i.e. negate it), other than via IF?

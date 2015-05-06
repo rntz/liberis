@@ -434,6 +434,9 @@ call an Eris function that scans this list and removes and calls the finalizers
 associated with dead weak refs. Again, the interface with the host program
 deserves some consideration.
 
+TODO: WHAT IF: I want a finalizer for an object pair, that only runs once both objects
+have been GC'ed?
+
 * Language vs. library vs. runtime
 
 Unfortunately the internals of the VM are too tangled up with eris' semantics to
